@@ -3,7 +3,7 @@ Main Flask Application with Socket.IO
 Entry point for the Draw & Guess game server
 """
 import os
-from flask import Flask, render_template, request
+from flask import Flask, request
 from flask_socketio import SocketIO, emit, join_room, leave_room
 from flask_cors import CORS
 from dotenv import load_dotenv
