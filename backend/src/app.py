@@ -20,7 +20,7 @@ app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-pro
 CORS(app, resources={r"/*": {"origins": "*"}})
 
 # Initialize SocketIO
-socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
 
 # In-memory storage for rooms and games
 # TODO: Move to proper data models (Thành viên 2)
