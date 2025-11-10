@@ -5,6 +5,8 @@
 class Chat {
     constructor(socketClient) {
         this.socket = socketClient;
+        this.playerName = localStorage.getItem('playerName') || 'Guest';
+        this.roomId = localStorage.getItem('roomId') || 'ROOM001';
         this.setupEventListeners();
     }
 
@@ -20,6 +22,7 @@ class Chat {
         if (chatInput) {
             chatInput.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') {
+                    e.preventDefault();
                     this.sendMessage();
                 }
             });
@@ -33,6 +36,13 @@ class Chat {
         this.socket.on('correct_guess', (data) => {
             this.displayCorrectGuess(data);
         });
+        this.socket.on('chat_history', (messages) => {
+            const chatMessages = document.getElementById('chat-messages');
+            if (!chatMessages|| !Array.isArray(messages)) return;
+            chatMessages.innerHTML = ''; // Clear existing messages
+            messages.forEach((m) => this.displayMessage(m));
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        });
     }
 
     sendMessage() {
@@ -44,6 +54,8 @@ class Chat {
 
         // Emit message to server
         this.socket.emit('send_message', {
+            room_id: this.roomId,
+            player_name: this.playerName,
             message: message
         });
 

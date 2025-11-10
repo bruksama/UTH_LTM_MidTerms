@@ -12,6 +12,10 @@ const gameUI = new GameUI(socketClient);
 const scoreboard = new Scoreboard();
 const chat = new Chat(socketClient);
 const notifications = new Notifications();
+const roomId = localStorage.getItem('roomId') || 'ROOM001';
+const playerName = localStorage.getItem('playerName') || ('Player_' + Math.floor(Math.random() * 1000));
+localStorage.setItem('roomId', roomId);
+localStorage.setItem('playerName', playerName);
 
 // Make components globally accessible
 window.roomUI = roomUI;
@@ -42,6 +46,10 @@ if (canvas) {
 socketClient.on('connected', () => {
     console.log('Connected to game server');
     notifications.info('Đã kết nối với server');
+    socketClient.emit('join_room', { room_id: roomId, player_name: playerName });
+});
+socketClient.on('room_joined', (data) => {
+    socketClient.emit('request_chat_history', { room_id: data.room_id });
 });
 
 socketClient.on('disconnect', () => {
