@@ -8,8 +8,8 @@ socketClient.connect();
 
 // Initialize UI components
 const roomUI = new RoomUI(socketClient);
+const gameUI = new GameUI(socketClient);
 const scoreboard = new Scoreboard();
-const gameUI = new GameUI(socketClient, scoreboard);
 const chat = new Chat(socketClient);
 const notifications = new Notifications();
 const roomId = localStorage.getItem('roomId') || 'ROOM001';
