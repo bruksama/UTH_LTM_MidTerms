@@ -14,29 +14,6 @@ class DrawerCanvas {
     this.lastX = 0;
     this.lastY = 0;
 
-    // NEW: emitter đã được throttle / debounce
-    const fallbackThrottle = (fn, ms) => fn; // phòng khi helpers chưa load
-    const fallbackDebounce = (fn, ms) => fn;
-
-    const _throttle =
-      typeof throttle === "function" ? throttle : fallbackThrottle;
-    const _debounce =
-      typeof debounce === "function" ? debounce : fallbackDebounce;
-
-    // Throttle ~ 16ms (60fps).
-    this.emitMoveThrottled = _throttle((payload) => {
-      this.socket?.emit("drawing_move", payload);
-    }, 16);
-
-    // Debounce khi đổi màu & cỡ bút để tránh spam khi kéo slider/nhấp liên tục
-    this.emitColorDebounced = _debounce((payload) => {
-      this.socket?.emit("change_color", payload);
-    }, 120);
-
-    this.emitBrushDebounced = _debounce((payload) => {
-      this.socket?.emit("change_brush_size", payload);
-    }, 120);
-
     this.setupEventListeners();
     this.setupDrawingTools();
   }
@@ -141,7 +118,7 @@ class DrawerCanvas {
     this.ctx.lineTo(pos.x, pos.y);
     this.ctx.stroke();
 
-    this.emitMoveThrottled({ x: pos.x, y: pos.y });
+    this.socket?.emit("drawing_move", { x: pos.x, y: pos.y });
 
     this.lastX = pos.x;
     this.lastY = pos.y;
@@ -156,11 +133,12 @@ class DrawerCanvas {
 
   setColor(color) {
     this.currentColor = color;
-    this.emitColorDebounced({ color });
+    this.socket?.emit("change_color", { color });
   }
+
   setBrushSize(size) {
     this.currentBrushSize = size;
-    this.emitBrushDebounced({ size });
+    this.socket?.emit("change_brush_size", { size });
   }
 
   clearCanvas() {
