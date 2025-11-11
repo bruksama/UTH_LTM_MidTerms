@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Draw & Guess — Realtime Canvas Test</title>
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 20px; }
+    .row { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; flex-wrap: wrap; }
+    label { font-size: 14px; }
+    input[type="text"] { padding: 6px 8px; }
+    button { padding: 6px 10px; cursor: pointer; }
+    canvas { border: 1px solid #ddd; border-radius: 6px; display: block; }
+    #log { background:#111; color:#9f9; padding:10px; height:120px; overflow:auto; white-space:pre-wrap; border-radius:6px; }
+  </style>
+</head>
+<body>
+  <h2>Realtime Drawing Test (Socket.IO)</h2>
+
+  <!-- Room controls -->
+  <div class="row">
+    <button id="btnCreate">Create room</button>
+    <input id="txtRoomId" type="text" placeholder="ROOM ID" style="width:120px" />
+    <input id="txtName" type="text" placeholder="Your name" value="Guest" style="width:140px" />
+    <button id="btnJoin">Join room</button>
+  </div>
+
+  <!-- Drawing controls -->
+  <div class="row">
+    <label>Color:</label>
+    <input id="pickColor" type="color" value="#222222" />
+    <label>Brush:</label>
+    <input id="rangeSize" type="range" min="1" max="30" value="4" />
+    <span id="lblSize">4px</span>
+    <button id="btnClear">Clear</button>
+  </div>
+
+  <canvas id="board" width="900" height="540"></canvas>
+
+  <h3>Log</h3>
+  <div id="log"></div>
+
+  <script>
+    // ====== Utils ======
+    const log = (msg) => {
+      const el = document.getElementById('log');
+      el.textContent += (typeof msg === 'string' ? msg : JSON.stringify(msg)) + "\n";
+      el.scrollTop = el.scrollHeight;
+    };
+
+    // ====== SocketIO ======
+    const socket = io("http://localhost:5000", { transports: ["websocket"] });
+
+    socket.on("connect", () => log({connected: socket.id}));
+    socket.on("connected", (d) => log({server: d}));
+
+    // room events
+    socket.on("room_created", (d) => {
+      document.getElementById("txtRoomId").value = d.room_id;
+      log({room_created: d});
+    });
+    socket.on("room_joined", (d) => log({room_joined: d}));
+    socket.on("player_joined", (d) => log({player_joined: d}));
+    socket.on("player_left", (d) => log({player_left: d}));
+    socket.on("room_players", (d) => log({room_players: d}));
+
+    // ====== DOM refs ======
+    const txtRoomId = document.getElementById("txtRoomId");
+    const txtName   = document.getElementById("txtName");
+    const btnCreate = document.getElementById("btnCreate");
+    const btnJoin   = document.getElementById("btnJoin");
+
+    const pickColor = document.getElementById("pickColor");
+    const rangeSize = document.getElementById("rangeSize");
+    const lblSize   = document.getElementById("lblSize");
+    const btnClear  = document.getElementById("btnClear");
+
+    const canvas = document.getElementById("board");
+    const ctx = canvas.getContext("2d");
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.strokeStyle = pickColor.value;
+    ctx.lineWidth = Number(rangeSize.value);
+
+    // ====== Room actions ======
+    btnCreate.onclick = () => {
+      const name = txtName.value.trim() || "Host";
+      socket.emit("create_room", { player_name: name });
+    };
+
+    btnJoin.onclick = () => {
+      const code = txtRoomId.value.trim();
+      const name = txtName.value.trim() || "Guest";
+      if (!code) return alert("Enter ROOM ID!");
+      socket.emit("join_room", { room_id: code, player_name: name });
+    };
+
+    // ====== Drawing actions ======
+    let drawing = false;
+
+    const toXY = (e) => {
+      const rect = canvas.getBoundingClientRect();
+      return { x: Math.round(e.clientX - rect.left), y: Math.round(e.clientY - rect.top) };
+    };
+
+    canvas.addEventListener("mousedown", (e) => {
+      drawing = true;
+      const {x, y} = toXY(e);
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      socket.emit("drawing_start", { x, y });
+    });
+
+    canvas.addEventListener("mousemove", (e) => {
+      if (!drawing) return;
+      const {x, y} = toXY(e);
+      ctx.lineTo(x, y);
+      ctx.stroke();
+      socket.emit("drawing_move", { x, y });
+    });
+
+    const endDraw = () => {
+      if (!drawing) return;
+      drawing = false;
+      ctx.closePath();
+      socket.emit("drawing_end");
+    };
+    canvas.addEventListener("mouseup", endDraw);
+    canvas.addEventListener("mouseleave", endDraw);
+
+    // color & brush
+    pickColor.oninput = () => {
+      ctx.strokeStyle = pickColor.value;
+      socket.emit("change_color", { color: pickColor.value });
+    };
+    rangeSize.oninput = () => {
+      ctx.lineWidth = Number(rangeSize.value);
+      lblSize.textContent = rangeSize.value + "px";
+      socket.emit("change_brush_size", { size: Number(rangeSize.value) });
+    };
+
+    // clear
+    btnClear.onclick = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      socket.emit("clear_canvas");
+    };
+
+    // ====== Receive from server ======
+    socket.on("canvas_update", (data) => {
+      // Áp dụng các thay đổi từ người khác trong cùng room
+      if (data.type === "start") {
+        ctx.beginPath();
+        ctx.moveTo(data.x, data.y);
+      } else if (data.type === "move") {
+        ctx.lineTo(data.x, data.y);
+        ctx.stroke();
+      } else if (data.type === "end") {
+        ctx.closePath();
+      } else if (data.type === "color") {
+        ctx.strokeStyle = data.color || ctx.strokeStyle;
+        pickColor.value = data.color || pickColor.value;
+      } else if (data.type === "brush_size") {
+        ctx.lineWidth = Number(data.size) || ctx.lineWidth;
+        rangeSize.value = ctx.lineWidth;
+        lblSize.textContent = ctx.lineWidth + "px";
+      } else if (data.type === "clear") {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
+    });
+  </script>
+</body>
+</html>
