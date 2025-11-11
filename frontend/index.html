@@ -47,7 +47,12 @@
                 <!-- Center: Canvas Area -->
                 <div class="center-panel">
                     <div class="game-header">
-                        <div id="timer-display" class="timer">90</div>
+                        <div class="timer-wrapper">
+                            <div id="timer-display" class="timer">90</div>
+                            <div id="timer-progress" class="timer-progress">
+                                <div id="timer-progress-bar" class="timer-progress-bar"></div>
+                            </div>
+                        </div>
                         <div id="current-drawer" class="drawer-info"></div>
                     </div>
                     
@@ -80,6 +85,13 @@
                     <div id="word-display" class="word-display hidden">
                         <p>Từ khóa của bạn:</p>
                         <h2 id="secret-word"></h2>
+                    </div>
+
+                    <!-- Game State Overlay -->
+                    <div id="game-state-overlay" class="game-state-overlay hidden" data-type="info">
+                        <div class="game-state-content">
+                            <div id="game-state-message">Đang tải...</div>
+                        </div>
                     </div>
                 </div>
 
