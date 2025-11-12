@@ -38,6 +38,7 @@ if (canvas) {
 
   // Listen for canvas updates
   socketClient.on("canvas_update", (data) => {
+    console.log("Canvas update:", data?.type || "batch");
     if (window.viewerCanvas) {
       window.viewerCanvas.handleCanvasUpdate(data);
     }
@@ -53,6 +54,10 @@ socketClient.on("connected", () => {
 
 socketClient.on("room_joined", (data) => {
   console.log("Room joined:", data.room_id);
+  // Initialize scoreboard with current players
+  if (data.players && Array.isArray(data.players) && window.scoreboard) {
+    window.scoreboard.update(data.players);
+  }
   socketClient.emit("request_chat_history", { room_id: data.room_id });
 });
 
@@ -92,11 +97,39 @@ socketClient.on("game_ended", (data) => {
   }
 });
 
-// Canvas synchronization events
-socketClient.on("canvas_update", (data) => {
-  console.log("Canvas update:", data.type);
-  if (window.viewerCanvas) {
-    window.viewerCanvas.handleCanvasUpdate(data);
+// Scoreboard related events
+socketClient.on("player_joined", (data) => {
+  if (data && data.player && window.scoreboard) {
+    window.scoreboard.addPlayer(data.player);
+  }
+});
+
+socketClient.on("player_left", (data) => {
+  if (data && data.player_id && window.scoreboard) {
+    window.scoreboard.removePlayer(data.player_id);
+  }
+});
+
+socketClient.on("scores_updated", (data) => {
+  if (data && data.players && window.scoreboard) {
+    window.scoreboard.update(data.players);
+  }
+});
+
+socketClient.on("player_score_updated", (data) => {
+  if (
+    data &&
+    data.player_id &&
+    typeof data.score === "number" &&
+    window.scoreboard
+  ) {
+    window.scoreboard.updateScore(data.player_id, data.score);
+  }
+});
+
+socketClient.on("drawer_changed", (data) => {
+  if (data && data.drawer_id && window.scoreboard) {
+    window.scoreboard.setDrawer(data.drawer_id);
   }
 });
 
