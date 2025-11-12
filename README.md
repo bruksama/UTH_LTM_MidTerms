@@ -9,6 +9,7 @@ Dự án Web-Game multiplayer real-time sử dụng WebSocket cho môn học L�
 ## Công nghệ sử dụng
 
 ### Backend
+
 - **Python 3.8+**
 - **Flask** - Web framework
 - **Flask-SocketIO** - WebSocket library (tương thích Socket.IO)
@@ -17,6 +18,7 @@ Dự án Web-Game multiplayer real-time sử dụng WebSocket cho môn học L�
 - **eventlet** - Async networking library
 
 ### Frontend
+
 - **HTML5 Canvas** - Drawing surface
 - **Vanilla JavaScript** - Client-side logic
 - **Socket.IO Client** - WebSocket client library
@@ -52,6 +54,7 @@ UTH_LTM_MidTerms/
 ## Cài đặt và Chạy
 
 ### Yêu cầu hệ thống
+
 - Python 3.8 hoặc cao hơn
 - pip (Python package manager)
 - Trình duyệt web hiện đại (Chrome, Firefox, Safari)
@@ -59,6 +62,7 @@ UTH_LTM_MidTerms/
 ### Backend Setup
 
 1. **Tạo virtual environment (khuyến nghị):**
+
 ```bash
 cd backend
 python -m venv venv
@@ -71,11 +75,13 @@ source venv/bin/activate
 ```
 
 2. **Cài đặt dependencies:**
+
 ```bash
 pip install -r requirements.txt
 ```
 
 3. **Cấu hình environment variables:**
+
 ```bash
 # Copy file .env.example thành .env
 cp .env.example .env
@@ -87,6 +93,7 @@ cp .env.example .env
 ```
 
 4. **Chạy server:**
+
 ```bash
 python src/app.py
 ```
@@ -115,12 +122,14 @@ npx http-server -p 8000
 ## Phân chia Nhiệm vụ (Team Members)
 
 ### Thành viên 1: Project Lead & Backend Architect
+
 - ✅ Thiết kế kiến trúc tổng thể
 - ✅ Định nghĩa Socket API (xem `docs/API.md`)
 - ✅ Thiết lập Flask-SocketIO server
 - ✅ Quản lý Git và code integration
 
 ### Thành viên 2: Backend Logic - Game State & Rooms
+
 - [ ] Implement `models/room.py` - Room management
 - [ ] Implement `models/player.py` - Player model
 - [ ] Implement `models/game.py` - Game state machine
@@ -130,12 +139,14 @@ npx http-server -p 8000
 - [ ] Implement guess checking logic
 
 ### Thành viên 3: Frontend Lead & Canvas (Drawer)
-- [ ] Hoàn thiện `js/canvas/drawerCanvas.js` - Drawing logic
-- [ ] Implement drawing tools UI (color picker, brush size)
+
+- ✅ Hoàn thiện `js/canvas/drawerCanvas.js` - Drawing logic
+- ✅ Implement drawing tools UI (color picker, brush size)
 - [ ] Optimize drawing event emission (throttle/debounce)
 - [ ] Handle touch events cho mobile devices
 
 ### Thành viên 4: Frontend - Socket Synchronization & UI
+
 - [ ] Hoàn thiện `js/canvas/viewerCanvas.js` - Canvas sync
 - [ ] Implement scoreboard updates real-time
 - [ ] Implement timer display và countdown
@@ -143,6 +154,7 @@ npx http-server -p 8000
 - [ ] Handle game state transitions UI
 
 ### Thành viên 5: Frontend - Chat/Guessing Module & UX
+
 - [ ] Hoàn thiện chat system với message history
 - [ ] Implement guess validation và highlighting
 - [ ] Implement notification system (join/leave, correct guess, etc.)
@@ -152,6 +164,7 @@ npx http-server -p 8000
 ## Tính năng chính
 
 ### Đã hoàn thành (Skeleton)
+
 - ✅ Cấu trúc dự án và thư mục
 - ✅ Flask-SocketIO server setup
 - ✅ Frontend HTML/CSS/JS skeleton
@@ -161,6 +174,7 @@ npx http-server -p 8000
 - ✅ UI components structure
 
 ### Cần hoàn thiện
+
 - [ ] Room management logic đầy đủ
 - [ ] Game state machine và round management
 - [ ] Timer system
@@ -204,18 +218,21 @@ Các hằng số game có thể được chỉnh sửa trong `backend/src/config
 ## Troubleshooting
 
 ### Backend không khởi động
+
 - Kiểm tra Python version: `python --version` (cần >= 3.8)
 - Kiểm tra virtual environment đã được activate
 - Kiểm tra dependencies đã được cài đặt: `pip list`
 - Kiểm tra port 5000 có đang được sử dụng không
 
 ### Frontend không kết nối được với backend
+
 - Kiểm tra backend đang chạy tại đúng port
 - Kiểm tra CORS settings trong `backend/src/app.py`
 - Kiểm tra URL trong `frontend/js/socket/socketClient.js`
 - Mở Developer Console để xem lỗi
 
 ### Canvas không hiển thị
+
 - Kiểm tra canvas element trong HTML
 - Kiểm tra JavaScript console cho lỗi
 - Đảm bảo các file JS đã được load đúng thứ tự
@@ -227,4 +244,3 @@ Dự án này được tạo cho mục đích giáo dục trong môn học Lập
 ## Liên hệ
 
 Nếu có câu hỏi hoặc vấn đề, vui lòng liên hệ Project Lead hoặc tạo issue trong repository.
-
