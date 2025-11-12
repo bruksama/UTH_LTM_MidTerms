@@ -17,10 +17,10 @@ class Chat {
             sendBtn.addEventListener('click', () => this.sendMessage());
         }
 
-        // Enter key on chat input
+        // Enter key on chat input (keydown + preventDefault để tránh double-submit)
         const chatInput = document.getElementById('chat-input');
         if (chatInput) {
-            chatInput.addEventListener('keypress', (e) => {
+            chatInput.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter') {
                     e.preventDefault();
                     this.sendMessage();
@@ -36,9 +36,11 @@ class Chat {
         this.socket.on('correct_guess', (data) => {
             this.displayCorrectGuess(data);
         });
+
+        // Nhận lịch sử chat
         this.socket.on('chat_history', (messages) => {
             const chatMessages = document.getElementById('chat-messages');
-            if (!chatMessages|| !Array.isArray(messages)) return;
+            if (!chatMessages || !Array.isArray(messages)) return;
             chatMessages.innerHTML = ''; // Clear existing messages
             messages.forEach((m) => this.displayMessage(m));
             chatMessages.scrollTop = chatMessages.scrollHeight;
@@ -63,20 +65,30 @@ class Chat {
         chatInput.value = '';
     }
 
+    _timeNow() {
+        const d = new Date();
+        const hh = String(d.getHours()).padStart(2, '0');
+        const mm = String(d.getMinutes()).padStart(2, '0');
+        return `${hh}:${mm}`;
+    }
+
     displayMessage(data) {
         const chatMessages = document.getElementById('chat-messages');
         if (!chatMessages) return;
 
+        const name = data?.player_name ?? '???';
+        const text = data?.message ?? '';
+        const isGuess = !!data?.is_guess;
+        const time = this._timeNow();
+
         const messageDiv = document.createElement('div');
         messageDiv.className = 'chat-message';
-        
-        if (data.is_guess) {
-            messageDiv.classList.add('guess');
-        }
+        if (isGuess) messageDiv.classList.add('guess');
 
         messageDiv.innerHTML = `
-            <span class="player-name">${sanitizeHTML(data.player_name)}:</span>
-            <span>${sanitizeHTML(data.message)}</span>
+            <span class="time">[${time}]</span>
+            <span class="player-name">${sanitizeHTML(name)}:</span>
+            <span>${sanitizeHTML(text)}</span>
         `;
 
         chatMessages.appendChild(messageDiv);
@@ -87,11 +99,16 @@ class Chat {
         const chatMessages = document.getElementById('chat-messages');
         if (!chatMessages) return;
 
+        const name = data?.player_name ?? 'Ai đó';
+        const word = data?.word ?? '';
+        const time = this._timeNow();
+
         const messageDiv = document.createElement('div');
         messageDiv.className = 'chat-message correct';
         messageDiv.innerHTML = `
-            <strong>🎉 ${sanitizeHTML(data.player_name)} đã đoán đúng!</strong>
-            <br>Từ khóa là: <strong>${sanitizeHTML(data.word)}</strong>
+            <span class="time">[${time}]</span>
+            <strong>🎉 ${sanitizeHTML(name)} đã đoán đúng!</strong>
+            <br>Từ khóa là: <strong>${sanitizeHTML(word)}</strong>
         `;
 
         chatMessages.appendChild(messageDiv);
@@ -102,12 +119,13 @@ class Chat {
         const chatMessages = document.getElementById('chat-messages');
         if (!chatMessages) return;
 
+        const time = this._timeNow();
+
         const messageDiv = document.createElement('div');
         messageDiv.className = 'chat-message system';
-        messageDiv.textContent = message;
+        messageDiv.innerHTML = `<span class="time">[${time}]</span> ${sanitizeHTML(message || '')}`;
 
         chatMessages.appendChild(messageDiv);
         chatMessages.scrollTop = chatMessages.scrollHeight;
     }
 }
-
