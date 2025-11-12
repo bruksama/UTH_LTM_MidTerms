@@ -22,8 +22,9 @@ class Notifications {
     show(message, type = 'info', duration = 3000) {
         const notification = document.createElement('div');
         notification.className = `notification ${type}`;
+        notification.textContent = message;
 
-        // Add icon + close
+        //Add icon
         const icon = this._getIcon(type);
         notification.innerHTML = `
             <span class="icon">${icon}</span>
@@ -37,25 +38,24 @@ class Notifications {
         let timer = setTimeout(remove, duration);
         notification.addEventListener('mouseenter', () => clearTimeout(timer));
         notification.addEventListener('mouseleave', () => {
-            timer = setTimeout(remove, Math.max(500, duration / 2));
+            timer = setTimeout(remove, duration / 2);
         });
 
-        // Manual close (guard)
-        const btn = notification.querySelector('.close-btn');
-        if (btn) btn.addEventListener('click', remove);
+        //Manual close
+        notification.querySelector('.close-btn').addEventListener('click', remove);
 
         function remove() {
             notification.style.animation = 'slideIn 0.3s ease reverse';
             setTimeout(() => notification.remove(), 250);
         }
     }
-
+    
     _getIcon(type) {
         switch (type) {
             case 'success': return '✔️';
-            case 'error':   return '❌';
+            case 'error': return '❌';
             case 'info':
-            default:        return '💬';
+            default: return '💬';
         }
     }
 
