@@ -22,31 +22,44 @@ class Notifications {
     show(message, type = 'info', duration = 3000) {
         const notification = document.createElement('div');
         notification.className = `notification ${type}`;
-        notification.textContent = message;
+
+        // Add icon + close
+        const icon = this._getIcon(type);
+        notification.innerHTML = `
+            <span class="icon">${icon}</span>
+            <span class="text">${message}</span>
+            <button class="close-btn" aria-label="Close">&times;</button>
+        `;
 
         this.container.appendChild(notification);
 
-        // Auto remove after duration
-        setTimeout(() => {
+        // Pause on hover
+        let timer = setTimeout(remove, duration);
+        notification.addEventListener('mouseenter', () => clearTimeout(timer));
+        notification.addEventListener('mouseleave', () => {
+            timer = setTimeout(remove, Math.max(500, duration / 2));
+        });
+
+        // Manual close (guard)
+        const btn = notification.querySelector('.close-btn');
+        if (btn) btn.addEventListener('click', remove);
+
+        function remove() {
             notification.style.animation = 'slideIn 0.3s ease reverse';
-            setTimeout(() => {
-                if (notification.parentNode) {
-                    notification.parentNode.removeChild(notification);
-                }
-            }, 300);
-        }, duration);
+            setTimeout(() => notification.remove(), 250);
+        }
     }
 
-    success(message, duration) {
-        this.show(message, 'success', duration);
+    _getIcon(type) {
+        switch (type) {
+            case 'success': return '✔️';
+            case 'error':   return '❌';
+            case 'info':
+            default:        return '💬';
+        }
     }
 
-    error(message, duration) {
-        this.show(message, 'error', duration);
-    }
-
-    info(message, duration) {
-        this.show(message, 'info', duration);
-    }
+    success(message, duration) { this.show(message, 'success', duration); }
+    error(message, duration)   { this.show(message, 'error', duration); }
+    info(message, duration)    { this.show(message, 'info', duration); }
 }
-
