@@ -72,6 +72,10 @@ socketClient.on("round_started", (data) => {
   } else if (window.drawerCanvas) {
     window.drawerCanvas.disable();
   }
+
+  if (window.scoreboard && data && data.drawer_id) {
+    window.scoreboard.setDrawer(data.drawer_id);
+  }
 });
 
 socketClient.on("round_ended", (data) => {
@@ -80,6 +84,10 @@ socketClient.on("round_ended", (data) => {
   // Disable drawer canvas
   if (window.drawerCanvas) {
     window.drawerCanvas.disable();
+  }
+
+  if (window.scoreboard && data && Array.isArray(data.scores)) {
+    window.scoreboard.applyRoundResults(data.scores);
   }
 });
 
@@ -94,6 +102,17 @@ socketClient.on("game_ended", (data) => {
   // Reset canvas
   if (window.viewerCanvas) {
     window.viewerCanvas.reset();
+  }
+
+  if (window.scoreboard) {
+    window.scoreboard.setDrawer(null);
+  }
+});
+
+socketClient.on("game_started", (data) => {
+  console.log("Game started");
+  if (window.scoreboard && data && Array.isArray(data.players)) {
+    window.scoreboard.update(data.players);
   }
 });
 
@@ -112,7 +131,7 @@ socketClient.on("player_left", (data) => {
 
 socketClient.on("scores_updated", (data) => {
   if (data && data.players && window.scoreboard) {
-    window.scoreboard.update(data.players);
+    window.scoreboard.update(data.players, { animate: true });
   }
 });
 
@@ -123,7 +142,13 @@ socketClient.on("player_score_updated", (data) => {
     typeof data.score === "number" &&
     window.scoreboard
   ) {
-    window.scoreboard.updateScore(data.player_id, data.score);
+    const delta =
+      typeof data.points_earned === "number"
+        ? data.points_earned
+        : typeof data.delta === "number"
+        ? data.delta
+        : null;
+    window.scoreboard.updateScore(data.player_id, data.score, delta);
   }
 });
 
