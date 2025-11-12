@@ -12,6 +12,7 @@ const gameUI = new GameUI(socketClient);
 const scoreboard = new Scoreboard();
 const chat = new Chat(socketClient);
 const notifications = new Notifications();
+
 const roomId = localStorage.getItem("roomId") || "ROOM001";
 const playerName =
   localStorage.getItem("playerName") ||
@@ -58,7 +59,11 @@ socketClient.on("room_joined", (data) => {
   if (data.players && Array.isArray(data.players) && window.scoreboard) {
     window.scoreboard.update(data.players);
   }
-  socketClient.emit("request_chat_history", { room_id: data.room_id });
+  if (data?.room_id) {
+    socketClient.emit("request_chat_history", { room_id: data.room_id });
+    // dòng system cho chính mình
+    if (window.chat) window.chat.displaySystemMessage(`Bạn đã tham gia phòng ${data.room_id}`);
+  }
 });
 
 // Game state events
@@ -73,9 +78,13 @@ socketClient.on("round_started", (data) => {
     window.drawerCanvas.disable();
   }
 
-  if (window.scoreboard && data && data.drawer_id) {
+  if (window.scoreboard && data.drawer_id) {
     window.scoreboard.setDrawer(data.drawer_id);
   }
+
+  // Thông báo + system line
+  notifications.info("Vòng mới bắt đầu!");
+  if (window.chat) window.chat.displaySystemMessage("Vòng mới bắt đầu!");
 });
 
 socketClient.on("round_ended", (data) => {
@@ -89,6 +98,11 @@ socketClient.on("round_ended", (data) => {
   if (window.scoreboard && data && Array.isArray(data.scores)) {
     window.scoreboard.applyRoundResults(data.scores);
   }
+
+  // Thông báo + system line (hiển thị từ khoá nếu có)
+  const revealed = data?.word ? ` Từ khóa: ${data.word}` : "";
+  notifications.info(`Vòng kết thúc.${revealed}`);
+  if (window.chat) window.chat.displaySystemMessage(`Vòng kết thúc.${revealed}`);
 });
 
 socketClient.on("game_ended", (data) => {
@@ -107,6 +121,10 @@ socketClient.on("game_ended", (data) => {
   if (window.scoreboard) {
     window.scoreboard.setDrawer(null);
   }
+
+  // Thông báo + system line
+  notifications.info("Trận đấu đã kết thúc!");
+  if (window.chat) window.chat.displaySystemMessage("Trận đấu đã kết thúc!");
 });
 
 socketClient.on("game_started", (data) => {
@@ -114,6 +132,10 @@ socketClient.on("game_started", (data) => {
   if (window.scoreboard && data && Array.isArray(data.players)) {
     window.scoreboard.update(data.players);
   }
+
+  // Thông báo + system line
+  notifications.info("Trận đấu bắt đầu!");
+  if (window.chat) window.chat.displaySystemMessage("Trận đấu bắt đầu!");
 });
 
 // Scoreboard related events
@@ -121,12 +143,20 @@ socketClient.on("player_joined", (data) => {
   if (data && data.player && window.scoreboard) {
     window.scoreboard.addPlayer(data.player);
   }
+  // Toast + system line
+  const name = data?.player?.name || "Người chơi";
+  notifications.info(`${name} đã tham gia phòng`);
+  if (window.chat) window.chat.displaySystemMessage(`${name} đã tham gia phòng`);
 });
 
 socketClient.on("player_left", (data) => {
   if (data && data.player_id && window.scoreboard) {
     window.scoreboard.removePlayer(data.player_id);
   }
+  // Toast + system line
+  const name = data?.player_name || "Người chơi";
+  notifications.info(`${name} đã rời phòng`);
+  if (window.chat) window.chat.displaySystemMessage(`${name} đã rời phòng`);
 });
 
 socketClient.on("scores_updated", (data) => {
@@ -163,6 +193,14 @@ socketClient.on("canvas_cleared", (data) => {
   if (window.viewerCanvas) {
     window.viewerCanvas.clearCanvas();
   }
+});
+
+socketClient.on("correct_guess", (data) => {
+  // Toast + system line (khớp với chat.js)
+  const name = data?.player_name || "Ai đó";
+  const word = data?.word || "???";
+  notifications.success(`🎉 ${name} đã đoán đúng: ${word}`);
+  if (window.chat) window.chat.displaySystemMessage(`🎉 ${name} đã đoán đúng: ${word}`);
 });
 
 socketClient.on("disconnect", () => {
