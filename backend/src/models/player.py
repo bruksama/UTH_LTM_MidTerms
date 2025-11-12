@@ -1,30 +1,25 @@
-"""
-Player Model
-"""
+# backend/src/models/player.py
+from dataclasses import dataclass, field
+from datetime import datetime
+import uuid
 
+@dataclass
 class Player:
-    """
-    Represents a player in the game
-    """
-    def __init__(self, player_id: str, name: str, room_id: str):
-        self.id = player_id
-        self.name = name
-        self.score = 0
-        self.room_id = room_id
-        self.is_drawer = False
+    player_id: str
+    name: str
+    score: int = 0
+    is_drawer: bool = False
+    joined_at: str = field(default_factory=lambda: datetime.utcnow().isoformat())
 
-    # --- methods cần dùng ngay ---
-    def add_score(self, points: int):
-        self.score += int(points)
-
-    def set_drawer(self, is_drawer: bool):
-        self.is_drawer = bool(is_drawer)
+    @staticmethod
+    def create(name: str) -> "Player":
+        return Player(player_id=str(uuid.uuid4()), name=name)
 
     def to_dict(self):
         return {
-            "id": self.id,
+            "player_id": self.player_id,
             "name": self.name,
             "score": self.score,
-            "room_id": self.room_id,
             "is_drawer": self.is_drawer,
+            "joined_at": self.joined_at,
         }

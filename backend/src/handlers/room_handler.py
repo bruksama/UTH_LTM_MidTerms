@@ -1,73 +1,77 @@
-from flask_socketio import SocketIO, emit, join_room, leave_room
+# backend/src/handlers/room_handler.py
+from flask_socketio import emit, join_room, leave_room
 from typing import Dict
-from src.models.room import Room
-from src.models.player import Player
 
+from ..models.room import Room
+from ..models.player import Player
 
-rooms: Dict[str, Room] = {}      # room_code -> Room
-players: Dict[str, Player] = {}  # sid -> Player
+# state tạm thời trong memory (sau có thể tách RoomManager)
+ROOMS: Dict[str, Room] = {}     # room_id -> Room
+PLAYER_ROOM: Dict[str, str] = {}  # sid -> room_id
+SID_PLAYER: Dict[str, Player] = {}  # sid -> Player
 
-def register_room_handlers(socketio: SocketIO):
-    @socketio.on("create_room")
-    def create_room(data):
-        from flask import request
-        name = (data or {}).get("name", "Host")
-        code = (data or {}).get("code")
-        sid = request.sid
+def _room_info_payload(room: Room):
+    return {"room": room.to_dict()}
 
-        if not code:
-            import uuid
-            code = str(uuid.uuid4())[:6].upper()
-        if code in rooms:
-            return emit("error", {"message": "Room existed"})
+def handle_create_room(sio, sid, data):
+    # data: { "player_name": "Tuan" }
+    name = (data or {}).get("player_name", f"Player-{sid[:5]}")
+    room = Room.create()
+    player = Player.create(name=name)
 
-        room = Room(code=code, owner_id=sid)
-        host = Player(player_id=sid, name=name, room_id=code)
-        room.add_player(host)
-        rooms[code] = room
-        players[sid] = host
+    # cập nhật state
+    room.add_player(player)
+    ROOMS[room.room_id] = room
+    PLAYER_ROOM[sid] = room.room_id
+    SID_PLAYER[sid] = player
 
-        join_room(code)
-        emit("room_created", {"room_id": code, "players": room.list_players()})
-        socketio.emit("room_players", {"players": room.list_players()}, room=code)
+    join_room(room.room_id, sid=sid)
 
-    @socketio.on("join_room")
-    def join_room_evt(data):
-        from flask import request
-        code = (data or {}).get("room_id")
-        name = (data or {}).get("player_name", "Player")
-        sid  = request.sid
+    emit("room_created", {"room_id": room.room_id, "player": player.to_dict()}, to=sid)
+    emit("room_info", _room_info_payload(room), room=room.room_id)
 
-        room = rooms.get(code)
-        if not room:
-            return emit("error", {"message": "Room not found"})
+def handle_join_room(sio, sid, data):
+    # data: { "room_id": "...", "player_name": "Trang" }
+    room_id = (data or {}).get("room_id")
+    name = (data or {}).get("player_name", f"Player-{sid[:5]}")
 
-        if sid in room.players:
-            return emit("room_joined", {"room_id": code, "players": room.list_players()})
+    room = ROOMS.get(room_id)
+    if not room:
+        emit("error", {"message": "Room not found"}, to=sid)
+        return
 
-        p = Player(player_id=sid, name=name, room_id=code)
-        room.add_player(p)
-        players[sid] = p
-        join_room(code)
+    player = Player.create(name=name)
+    room.add_player(player)
 
-        emit("room_joined", {"room_id": code, "players": room.list_players()})
-        socketio.emit("player_joined", {"player": p.to_dict()}, room=code)
+    PLAYER_ROOM[sid] = room.room_id
+    SID_PLAYER[sid] = player
+    join_room(room.room_id, sid=sid)
 
-    @socketio.on("leave_room")
-    def leave_room_evt(data=None):
-        from flask import request
-        sid = request.sid
-        p = players.get(sid)
-        if not p:
-            return
-        code = p.room_id
-        room = rooms.get(code)
-        if room:
-            room.remove_player(sid)
-            socketio.emit("player_left", {"player_id": sid, "players": room.list_players()}, room=code)
-            leave_room(code)
-            if not room.players:
-                rooms.pop(code, None)
-        players.pop(sid, None)
+    emit("room_joined", {"room_id": room.room_id, "player": player.to_dict()}, to=sid)
+    emit("player_joined", {"player": player.to_dict()}, room=room.room_id, include_self=False)
+    emit("room_info", _room_info_payload(room), room=room.room_id)
 
-    return rooms, players
+def handle_leave_room(sio, sid):
+    room_id = PLAYER_ROOM.get(sid)
+    player = SID_PLAYER.get(sid)
+    if not room_id or not player:
+        return
+
+    room = ROOMS.get(room_id)
+    if room:
+        room.remove_player(player.player_id)
+        emit("player_left", {"player_id": player.player_id}, room=room.room_id)
+        emit("room_info", _room_info_payload(room), room=room.room_id)
+
+        # nếu phòng trống thì xóa
+        if room.get_player_count() == 0:
+            del ROOMS[room.room_id]
+
+    # dọn map
+    leave_room(room_id, sid=sid)
+    PLAYER_ROOM.pop(sid, None)
+    SID_PLAYER.pop(sid, None)
+
+def handle_disconnect(sio, sid):
+    # rời phòng khi mất kết nối
+    handle_leave_room(sio, sid)
