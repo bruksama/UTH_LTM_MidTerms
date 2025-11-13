@@ -25,22 +25,57 @@ class GameUI {
       this.handleRoundEnded(data);
     });
 
+    // End of game lifecycle
+    this.socket.on("game_ended", (data) => {
+      this.handleGameEnded(data);
+    });
+
     this.socket.on("timer_update", (data) => {
       this.updateTimer(data.seconds);
     });
 
     this.socket.on("player_joined", (data) => {
-      // Will be handled by roomUI, but update here if needed
+      // Update players list when possible
+      if (Array.isArray(data?.players)) {
+        this.updatePlayersList(data.players);
+      } else if (window.scoreboard && Array.isArray(window.scoreboard.sortedPlayers)) {
+        this.updatePlayersList(window.scoreboard.sortedPlayers);
+      }
     });
 
     this.socket.on("player_left", (data) => {
-      // Update players list
+      if (Array.isArray(data?.players)) {
+        this.updatePlayersList(data.players);
+      } else if (window.scoreboard && Array.isArray(window.scoreboard.sortedPlayers)) {
+        this.updatePlayersList(window.scoreboard.sortedPlayers);
+      }
     });
   }
 
   handleGameStarted(data) {
     console.log("Game started:", data);
-    // Initialize game UI
+    // Initialize game UI state
+    this.isDrawer = false;
+    this.currentWord = "";
+    const initialSeconds = typeof data?.seconds === "number" ? data.seconds : 90;
+    this.remainingSeconds = initialSeconds;
+    this.updateTimer(this.remainingSeconds);
+
+    // Hide word display and reset drawer info
+    const wordDisplay = document.getElementById("word-display");
+    const drawerInfo = document.getElementById("current-drawer");
+    if (wordDisplay) wordDisplay.classList.add("hidden");
+    if (drawerInfo) drawerInfo.textContent = "";
+
+    // Ensure drawing is disabled until role is assigned
+    if (window.drawerCanvas) {
+      window.drawerCanvas.disable();
+    }
+
+    // Render current players list if available
+    if (Array.isArray(data?.players)) {
+      this.updatePlayersList(data.players);
+    }
   }
 
   handleRoundStarted(data) {
@@ -100,10 +135,7 @@ class GameUI {
     if (wordDisplay) wordDisplay.classList.add("hidden");
 
     // Stop local countdown when round ends
-    if (this._timerInterval) {
-      clearInterval(this._timerInterval);
-      this._timerInterval = null;
-    }
+    this._stopLocalTimer();
 
     // Show revealed word
     if (window.notifications) {
@@ -151,5 +183,35 @@ class GameUI {
             `;
       playersList.appendChild(playerItem);
     });
+  }
+
+  handleGameEnded(data) {
+    // Stop timer and reset UI elements
+    this._stopLocalTimer();
+    this.isDrawer = false;
+    const wordDisplay = document.getElementById("word-display");
+    const drawerInfo = document.getElementById("current-drawer");
+    if (wordDisplay) wordDisplay.classList.add("hidden");
+    if (drawerInfo) drawerInfo.textContent = "";
+
+    if (typeof data?.seconds === "number") {
+      this.updateTimer(data.seconds);
+    }
+
+    // Disable drawing capability at game end
+    if (window.drawerCanvas) {
+      window.drawerCanvas.disable();
+    }
+
+    if (window.notifications) {
+      window.notifications.info("Trận đấu đã kết thúc!");
+    }
+  }
+
+  _stopLocalTimer() {
+    if (this._timerInterval) {
+      clearInterval(this._timerInterval);
+      this._timerInterval = null;
+    }
   }
 }
