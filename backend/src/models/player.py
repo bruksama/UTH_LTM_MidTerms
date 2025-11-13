@@ -21,9 +21,33 @@ class Player:
         self.score = 0
         self.room_id = room_id
         self.is_drawer = False
-        
-    # TODO: Implement methods
-    # - add_score(points)
-    # - set_drawer(is_drawer)
-    # - to_dict()
+    
+    def add_score(self, points):
+        """
+        Add points to player's score
+        Args:
+            points: Number of points to add
+        """
+        self.score += points
+    
+    def set_drawer(self, is_drawer):
+        """
+        Set whether player is currently drawing
+        Args:
+            is_drawer: Boolean indicating drawer status
+        """
+        self.is_drawer = is_drawer
+    
+    def to_dict(self):
+        """
+        Convert player to dictionary for JSON serialization
+        Returns:
+            Dictionary with player data
+        """
+        return {
+            'id': self.id,
+            'name': self.name,
+            'score': self.score,
+            'is_drawer': self.is_drawer
+        }
 
