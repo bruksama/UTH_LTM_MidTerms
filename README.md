@@ -127,67 +127,152 @@ npx http-server -p 8000
 - ✅ Định nghĩa Socket API (xem `docs/API.md`)
 - ✅ Thiết lập Flask-SocketIO server
 - ✅ Quản lý Git và code integration
+- ✅ Setup connection management và basic room operations
 
 ### Thành viên 2: Backend Logic - Game State & Rooms
 
-- [ ] Implement `models/room.py` - Room management
-- [ ] Implement `models/player.py` - Player model
+- ⚠️ Basic room management (create, join, leave) - Implemented in app.py, needs refactoring
+- [ ] Implement `models/room.py` - Proper Room model
+- [ ] Implement `models/player.py` - Proper Player model
 - [ ] Implement `models/game.py` - Game state machine
-- [ ] Implement `handlers/room_handler.py` - Room logic
+- [ ] Refactor `handlers/room_handler.py` - Move logic from app.py
 - [ ] Implement `handlers/game_handler.py` - Game logic (rounds, scoring, timer)
 - [ ] Implement word selection từ `wordlist.json`
 - [ ] Implement guess checking logic
+- [ ] Implement scoring system
+- [ ] Implement timer system
 
 ### Thành viên 3: Frontend Lead & Canvas (Drawer)
 
 - ✅ Hoàn thiện `js/canvas/drawerCanvas.js` - Drawing logic
 - ✅ Implement drawing tools UI (color picker, brush size)
-- [ ] Optimize drawing event emission (throttle/debounce)
-- [ ] Handle touch events cho mobile devices
+- ✅ Optimize drawing event emission (throttle/debounce)
+- ✅ Handle touch events cho mobile devices
+- ✅ Enable/disable canvas based on drawer role
 
 ### Thành viên 4: Frontend - Socket Synchronization & UI
 
-- ✅ Hoàn thiện `js/canvas/viewerCanvas.js` - Canvas sync
+- ✅ Hoàn thiện `js/canvas/viewerCanvas.js` - Canvas sync với event queue
 - ✅ Implement scoreboard updates real-time
 - ✅ Implement timer display và countdown
-- [ ] Implement word display cho drawer
-- [ ] Handle game state transitions UI
+- ✅ Implement word display cho drawer
+- ✅ Handle game state transitions UI
+- ✅ Room UI (create/join functionality)
+- ✅ Player list display
 
 ### Thành viên 5: Frontend - Chat/Guessing Module & UX
 
-- [ ] Hoàn thiện chat system với message history
-- [ ] Implement guess validation và highlighting
-- [ ] Implement notification system (join/leave, correct guess, etc.)
+- ✅ Hoàn thiện chat system với message history
+- ✅ Implement notification system (toast notifications)
+- ✅ Handle player join/leave events
+- ⚠️ Guess validation - UI ready, waiting for backend logic
 - [ ] Responsive design và CSS improvements
 - [ ] UX enhancements và animations
+- [ ] Mobile optimization
 
 ## Tính năng chính
 
-### Đã hoàn thành (Skeleton)
+### ✅ Đã hoàn thành (~60% tổng thể)
 
-- ✅ Cấu trúc dự án và thư mục
-- ✅ Flask-SocketIO server setup
-- ✅ Frontend HTML/CSS/JS skeleton
-- ✅ Socket client connection
-- ✅ Basic Socket API events
-- ✅ Canvas drawing structure
-- ✅ UI components structure
+#### Backend (40% complete)
+- ✅ Flask-SocketIO server với threading mode
+- ✅ Socket connection management (connect/disconnect)
+- ✅ Basic room operations (create, join, leave)
+- ✅ Drawing events broadcast (start, move, end, color, brush size, clear)
+- ✅ Chat message broadcast
+- ✅ Player list synchronization
+- ✅ CORS configuration
+- ✅ Environment configuration
 
-### Cần hoàn thiện
+#### Frontend (95% complete)
+- ✅ Socket.IO client connection với auto-reconnect
+- ✅ Room creation và join UI
+- ✅ Canvas drawing system (DrawerCanvas)
+  - Drawing tools với throttle optimization
+  - Color picker (8 colors)
+  - Brush size control (3-20px)
+  - Clear canvas
+  - Touch support cho mobile
+- ✅ Canvas viewing system (ViewerCanvas)
+  - Real-time drawing synchronization
+  - Event queue với batching
+  - Smooth rendering
+- ✅ Chat system đầy đủ
+  - Send/receive messages
+  - Chat history
+  - System messages
+  - Timestamp display
+- ✅ Scoreboard component
+  - Player ranking
+  - Score display
+  - Drawer indicator
+  - Animated score updates
+- ✅ Notification system (toast)
+- ✅ Game UI state management
+- ✅ Utility functions (sanitize, throttle, debounce)
+- ✅ Complete HTML/CSS structure
 
-- [ ] Room management logic đầy đủ
-- [ ] Game state machine và round management
-- [ ] Timer system
-- [ ] Scoring system
-- [ ] Word selection và guess checking
-- [ ] Canvas synchronization hoàn chỉnh
-- [ ] Chat system với guess detection
-- [ ] Notification system
-- [ ] Error handling và edge cases
+### ⚠️ Đang phát triển
 
-## API Documentation
+- ⚠️ Room management refactoring (cần move logic vào handlers)
+- ⚠️ Data models (Room, Player, Game) - defined nhưng chưa được sử dụng
 
-Xem chi tiết tại [`docs/API.md`](docs/API.md)
+### ❌ Cần hoàn thiện (Game Logic - 0% complete)
+
+Các tính năng này đã có UI frontend ready, chỉ cần backend implement:
+
+- [ ] **Start game logic** - Khởi tạo game session
+- [ ] **Round management** - Bắt đầu/kết thúc vòng chơi
+- [ ] **Drawer selection** - Chọn người vẽ mỗi round
+- [ ] **Word selection** - Chọn từ khóa từ wordlist.json
+- [ ] **Timer system** - Countdown timer cho mỗi round
+- [ ] **Guess checking** - So sánh đoán với từ khóa
+- [ ] **Scoring system** - Tính điểm cho người đoán và người vẽ
+- [ ] **Round results** - Hiển thị kết quả sau mỗi round
+- [ ] **Game end condition** - Kết thúc game sau N rounds
+- [ ] **Word hints** - Hiển thị gợi ý (số chữ cái)
+
+**Ghi chú:** Frontend đã implement UI và event handlers cho tất cả tính năng trên. Khi backend emit các events tương ứng (`game_started`, `round_started`, `correct_guess`, `round_ended`, etc.), frontend sẽ hoạt động ngay lập tức.
+
+## Tình trạng API Implementation
+
+### Socket Events đã hoạt động
+
+**Client → Server:**
+- ✅ `create_room` - Tạo phòng mới
+- ✅ `join_room` - Tham gia phòng
+- ✅ `leave_room` - Rời phòng
+- ✅ `drawing_start` - Bắt đầu vẽ
+- ✅ `drawing_move` - Di chuyển khi vẽ
+- ✅ `drawing_end` - Kết thúc vẽ
+- ✅ `change_color` - Đổi màu
+- ✅ `change_brush_size` - Đổi cỡ bút
+- ✅ `clear_canvas` - Xóa canvas
+- ✅ `send_message` - Gửi tin nhắn chat
+
+**Server → Client:**
+- ✅ `connected` - Xác nhận kết nối
+- ✅ `room_created` - Phòng đã tạo
+- ✅ `room_joined` - Đã join phòng
+- ✅ `player_joined` - Người chơi mới join
+- ✅ `player_left` - Người chơi rời đi
+- ✅ `canvas_update` - Cập nhật vẽ
+- ✅ `chat_message` - Tin nhắn chat
+- ✅ `error` - Thông báo lỗi
+
+### Socket Events chờ backend implement
+
+Frontend đã sẵn sàng nhận các events sau:
+- ⏳ `game_started` - Game bắt đầu
+- ⏳ `round_started` - Round mới bắt đầu (với word cho drawer)
+- ⏳ `round_ended` - Round kết thúc (với scores)
+- ⏳ `game_ended` - Game kết thúc
+- ⏳ `timer_update` - Cập nhật thời gian còn lại
+- ⏳ `correct_guess` - Ai đó đoán đúng
+- ⏳ `scores_updated` - Cập nhật điểm số
+- ⏳ `drawer_changed` - Người vẽ thay đổi
+
+Xem chi tiết đầy đủ tại [`docs/API.md`](docs/API.md)
 
 ## Cấu hình Game
 
