@@ -149,7 +149,7 @@ npx http-server -p 8000
 
 - ✅ Hoàn thiện `js/canvas/viewerCanvas.js` - Canvas sync
 - ✅ Implement scoreboard updates real-time
-- [ ] Implement timer display và countdown
+- ✅ Implement timer display và countdown
 - [ ] Implement word display cho drawer
 - [ ] Handle game state transitions UI
 
