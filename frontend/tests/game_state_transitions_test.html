@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <title>Test: Game State Transitions UI</title>
+  <style>
+    .hidden { display: none; }
+    body { font-family: Arial, sans-serif; padding: 16px; }
+    .pass { color: #16a34a; }
+    .fail { color: #dc2626; }
+    .case { margin-bottom: 12px; }
+    #results { margin-top: 16px; padding: 12px; border: 1px solid #ddd; }
+  </style>
+</head>
+<body>
+  <h1>Test: Game State Transitions UI</h1>
+  <div class="game-header">
+    <div id="timer-display" class="timer">90</div>
+    <div id="current-drawer" class="drawer-info"></div>
+  </div>
+  <div id="word-display" class="word-display hidden">
+    <p>Từ khóa của bạn:</p>
+    <h2 id="secret-word"></h2>
+  </div>
+  <canvas id="game-canvas" width="200" height="150"></canvas>
+  <div id="results"></div>
+
+  <script>
+    class MockSocket { constructor(){ this._h={}; } on(e,f){ (this._h[e]=this._h[e]||[]).push(f);} emit(e,p){ (this._h[e]||[]).forEach(f=>f(p)); } }
+    const socketClient = new MockSocket();
+  </script>
+  <script src="../js/ui/gameUI.js"></script>
+  <script>
+    const gameUI = new GameUI(socketClient);
+
+    function assert(c, m){ const p=document.createElement('div'); p.className='case '+(c?'pass':'fail'); p.textContent=(c?'PASS: ':'FAIL: ')+m; document.getElementById('results').appendChild(p); return c; }
+
+    function run(){
+      // game_started should reset and hide word, clear labels, disable drawing
+      socketClient.emit('game_started', { seconds: 75 });
+      const wd = document.getElementById('word-display');
+      const sw = document.getElementById('secret-word');
+      const di = document.getElementById('current-drawer');
+      const t1 = assert(wd.classList.contains('hidden'), 'game_started ẩn word display');
+      const t2 = assert(sw.textContent === '', 'game_started xóa secret word');
+      const t3 = assert(di.textContent === '', 'game_started xóa drawer info');
+
+      // round_started as drawer
+      socketClient.emit('round_started', { is_drawer: true, word: 'BANANA', seconds: 60 });
+      const t4 = assert(!wd.classList.contains('hidden'), 'round_started (drawer) hiện word');
+      const t5 = assert(sw.textContent === 'BANANA', 'round_started (drawer) set đúng word');
+
+      // round_ended should hide word and stop timer interval
+      socketClient.emit('round_ended', { word: 'BANANA' });
+      const t6 = assert(wd.classList.contains('hidden'), 'round_ended ẩn word');
+
+      // round_started as viewer
+      socketClient.emit('round_started', { is_drawer: false, drawer_name: 'An', seconds: 50 });
+      const t7 = assert(wd.classList.contains('hidden'), 'round_started (viewer) ẩn word');
+      const t8 = assert(di.textContent.includes('Đang vẽ: An'), 'round_started (viewer) hiển thị đúng drawer name');
+
+      // game_ended should reset labels and hide word
+      socketClient.emit('game_ended', {});
+      const t9 = assert(wd.classList.contains('hidden'), 'game_ended ẩn word');
+      const t10 = assert(di.textContent === '', 'game_ended xóa drawer info');
+
+      const all = t1 && t2 && t3 && t4 && t5 && t6 && t7 && t8 && t9 && t10;
+      document.title = all ? 'PASS - Game State Transitions UI' : 'FAIL - Game State Transitions UI';
+    }
+    setTimeout(run, 10);
+  </script>
+</body>
+</html>

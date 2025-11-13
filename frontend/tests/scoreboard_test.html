@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <title>Test: Scoreboard Realtime Updates</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 16px; }
+    .pass { color: #16a34a; }
+    .fail { color: #dc2626; }
+    .case { margin-bottom: 12px; }
+    #results { margin-top: 16px; padding: 12px; border: 1px solid #ddd; }
+    .scoreboard { border: 1px solid #ddd; padding: 8px; margin-top: 10px; }
+    .scoreboard-row-drawer { background: #fff9e6; }
+    .score-delta { margin-left: 6px; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <h1>Test: Scoreboard Realtime Updates</h1>
+  <div id="scoreboard" class="scoreboard"></div>
+  <div id="results"></div>
+  <script src="../js/ui/scoreboard.js"></script>
+  <script>
+    function assert(cond, msg){
+      const p=document.createElement('div');
+      p.className='case '+(cond?'pass':'fail');
+      p.textContent=(cond?'PASS: ':'FAIL: ')+msg;
+      document.getElementById('results').appendChild(p);
+      return cond;
+    }
+
+    function rowEl(id){ return document.getElementById('scoreboard-row-'+id); }
+
+    function run(){
+      const sb = new Scoreboard('scoreboard');
+      sb.update([
+        { id:'p1', name:'A', score:10 },
+        { id:'p2', name:'B', score:5 }
+      ]);
+
+      let ok1 = !!rowEl('p1') && !!rowEl('p2');
+      assert(ok1, 'Khởi tạo danh sách người chơi');
+
+      sb.setDrawer('p2');
+      const ok2 = rowEl('p2').classList.contains('scoreboard-row-drawer');
+      assert(ok2, 'Đánh dấu người vẽ (drawer)');
+
+      sb.updateScore('p1', 20, 10);
+      const scoreText = rowEl('p1').querySelector('.scoreboard-col.score').textContent.trim();
+      const ok3 = scoreText.startsWith('20');
+      assert(ok3, 'Cập nhật điểm người chơi');
+
+      sb.applyRoundResults([
+        { player_id:'p2', player_name:'B', score:15, points_earned:10 }
+      ]);
+      const scoreText2 = rowEl('p2').querySelector('.scoreboard-col.score').textContent.trim();
+      const ok4 = scoreText2.startsWith('15');
+      assert(ok4, 'Áp dụng kết quả vòng');
+
+      const all = ok1 && ok2 && ok3 && ok4;
+      document.title = all ? 'PASS - Scoreboard Realtime Updates' : 'FAIL - Scoreboard Realtime Updates';
+    }
+
+    window.onload = run;
+  </script>
+</body>
+</html>

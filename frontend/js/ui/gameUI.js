@@ -25,6 +25,11 @@ class GameUI {
       this.handleRoundEnded(data);
     });
 
+    // Handle end of game to reset UI state
+    this.socket.on("game_ended", (data) => {
+      this.handleGameEnded(data);
+    });
+
     this.socket.on("timer_update", (data) => {
       this.updateTimer(data.seconds);
     });
@@ -40,7 +45,27 @@ class GameUI {
 
   handleGameStarted(data) {
     console.log("Game started:", data);
-    // Initialize game UI
+    // Initialize game UI: reset displays to neutral state until round_started arrives
+    this.isDrawer = false;
+    this.currentWord = "";
+
+    const wordDisplay = document.getElementById("word-display");
+    const secretWord = document.getElementById("secret-word");
+    const drawerInfo = document.getElementById("current-drawer");
+
+    if (wordDisplay) wordDisplay.classList.add("hidden");
+    if (secretWord) secretWord.textContent = "";
+    if (drawerInfo) drawerInfo.textContent = "";
+
+    // Reset timer UI (fallback to 90 if not provided)
+    const initialSeconds = typeof data?.seconds === "number" ? data.seconds : 90;
+    this.remainingSeconds = initialSeconds;
+    this.updateTimer(this.remainingSeconds);
+
+    // Ensure drawing is disabled until role is assigned in round_started
+    if (window.drawerCanvas) {
+      window.drawerCanvas.disable();
+    }
   }
 
   handleRoundStarted(data) {
@@ -111,6 +136,34 @@ class GameUI {
         `Từ khóa là: ${data.word || this.currentWord}`,
         "info"
       );
+    }
+  }
+
+  handleGameEnded(data) {
+    // Reset UI to post-game state
+    this.isDrawer = false;
+    const wordDisplay = document.getElementById("word-display");
+    const secretWord = document.getElementById("secret-word");
+    const drawerInfo = document.getElementById("current-drawer");
+    if (wordDisplay) wordDisplay.classList.add("hidden");
+    if (secretWord) secretWord.textContent = "";
+    if (drawerInfo) drawerInfo.textContent = "";
+
+    // Stop any running timer
+    if (this._timerInterval) {
+      clearInterval(this._timerInterval);
+      this._timerInterval = null;
+    }
+
+    // Keep timer display but reset color to default styling
+    const timerDisplay = document.getElementById("timer-display");
+    if (timerDisplay) {
+      timerDisplay.style.color = "#667eea";
+    }
+
+    // Ensure drawing is disabled
+    if (window.drawerCanvas) {
+      window.drawerCanvas.disable();
     }
   }
 
