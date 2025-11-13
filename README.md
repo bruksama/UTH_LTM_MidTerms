@@ -15,7 +15,7 @@ Dự án Web-Game multiplayer real-time sử dụng WebSocket cho môn học L�
 - **Flask-SocketIO** - WebSocket library (tương thích Socket.IO)
 - **Flask-CORS** - Cross-origin resource sharing
 - **python-dotenv** - Environment variables management
-- **eventlet** - Async networking library
+- **simple-websocket** - WebSocket support (threading mode)
 
 ### Frontend
 

@@ -19,7 +19,9 @@ app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-pro
 # Enable CORS
 CORS(app, resources={r"/*": {"origins": "*"}})
 
-# Initialize SocketIO
+# Initialize SocketIO with threading mode
+# Using threading mode instead of eventlet/gevent for better Python 3.12+ compatibility
+# Threading mode is simpler and sufficient for this application scale
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
 
 # In-memory storage for rooms and games
