@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <title>Test: Word Display cho Drawer</title>
+  <style>
+    .hidden { display: none; }
+    body { font-family: Arial, sans-serif; padding: 16px; }
+    .pass { color: #16a34a; }
+    .fail { color: #dc2626; }
+    .case { margin-bottom: 12px; }
+    #results { margin-top: 16px; padding: 12px; border: 1px solid #ddd; }
+  </style>
+</head>
+<body>
+  <h1>Test: Word Display cho Drawer</h1>
+  <div id="app">
+    <div id="timer-display">90</div>
+    <div id="current-drawer" class="drawer-info"></div>
+
+    <div id="word-display" class="word-display hidden">
+      <p>Từ khóa của bạn:</p>
+      <h2 id="secret-word"></h2>
+    </div>
+  </div>
+
+  <div id="results"></div>
+
+  <script>
+    // Minimal sanitizeHTML used by gameUI.js via global scope in some places
+    function sanitizeHTML(str) {
+      const div = document.createElement('div');
+      div.textContent = String(str ?? '');
+      return div.innerHTML;
+    }
+  </script>
+  <script>
+    // Mock socket client with simple on/emit
+    class MockSocket {
+      constructor() { this._handlers = {}; }
+      on(evt, cb) { (this._handlers[evt] = this._handlers[evt] || []).push(cb); }
+      emit(evt, payload) { (this._handlers[evt] || []).forEach(cb => cb(payload)); }
+    }
+    const socketClient = new MockSocket();
+    window.socketClient = socketClient; // for parity with main
+  </script>
+  <script src="../js/ui/gameUI.js"></script>
+  <script>
+    const gameUI = new GameUI(socketClient);
+
+    function assert(cond, msg) {
+      const p = document.createElement('div');
+      p.className = 'case ' + (cond ? 'pass' : 'fail');
+      p.textContent = (cond ? 'PASS: ' : 'FAIL: ') + msg;
+      document.getElementById('results').appendChild(p);
+      return cond;
+    }
+
+    function runTests() {
+      // Case 1: is_drawer = true shows word and message
+      socketClient.emit('round_started', { is_drawer: true, word: 'APPLE', seconds: 90 });
+      const wordDisplay = document.getElementById('word-display');
+      const secretWord = document.getElementById('secret-word');
+      const drawerInfo = document.getElementById('current-drawer');
+
+      const c1 = assert(!wordDisplay.classList.contains('hidden'), 'Word display hiện khi là drawer');
+      const c2 = assert(secretWord.textContent === 'APPLE', 'Hiển thị đúng từ khóa bí mật');
+      const c3 = assert(drawerInfo.textContent.includes('Đến lượt bạn vẽ'), 'Hiển thị trạng thái người vẽ đúng');
+
+      // Case 2: is_drawer = false hides word
+      socketClient.emit('round_started', { is_drawer: false, drawer_name: 'Nguyen', seconds: 90 });
+      const c4 = assert(wordDisplay.classList.contains('hidden'), 'Word display ẩn khi không phải drawer');
+      const c5 = assert(drawerInfo.textContent.includes('Đang vẽ: Nguyen'), 'Hiển thị đúng người đang vẽ khi không phải drawer');
+
+      const all = c1 && c2 && c3 && c4 && c5;
+      document.title = all ? 'PASS - Word Display Test' : 'FAIL - Word Display Test';
+    }
+
+    // Kick off tests after a short delay to ensure listeners ready
+    setTimeout(runTests, 10);
+  </script>
+</body>
+</html>

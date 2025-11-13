@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Timer UI Test</title>
+  <link rel="stylesheet" href="../css/styles.css" />
+  <style>
+    body { background: #f7fafc; }
+    .test-container { max-width: 800px; margin: 40px auto; background: #fff; padding: 16px 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); }
+    .test-log { font-family: Consolas, monospace; background: #0b1020; color: #d6deff; padding: 12px; border-radius: 8px; height: 200px; overflow: auto; }
+    .pass { color: #2f855a; }
+    .fail { color: #c53030; }
+    .muted { color: #a0aec0; }
+  </style>
+</head>
+<body>
+  <div class="test-container">
+    <h1>Timer Display & Countdown Test</h1>
+
+    <div class="game-header" style="margin:12px 0;">
+      <div id="timer-display" class="timer">90</div>
+      <div id="current-drawer" class="drawer-info"></div>
+    </div>
+
+    <div id="word-display" class="word-display hidden">
+      <p>Từ khóa của bạn:</p>
+      <h2 id="secret-word"></h2>
+    </div>
+
+    <div style="margin:16px 0;">
+      <button id="run-test" class="btn btn-primary">Run Timer Test</button>
+      <button id="reset" class="btn btn-secondary">Reset</button>
+    </div>
+
+    <div class="test-log" id="log"></div>
+  </div>
+
+  <script>
+    // Minimal mocks to satisfy GameUI references
+    window.drawerCanvas = {
+      enable: () => {},
+      disable: () => {}
+    };
+    window.notifications = {
+      show: () => {},
+      info: () => {},
+      error: () => {},
+      success: () => {}
+    };
+
+    // Mock Socket that supports on/emit and manual trigger
+    class MockSocket {
+      constructor() { this.handlers = {}; }
+      on(event, handler) { this.handlers[event] = handler; }
+      emit(event, data) { /* no-op for test */ }
+      trigger(event, data) { if (typeof this.handlers[event] === 'function') this.handlers[event](data); }
+    }
+
+    function log(msg, cls = 'muted') {
+      const el = document.getElementById('log');
+      const line = document.createElement('div');
+      line.className = cls;
+      line.textContent = msg;
+      el.appendChild(line);
+      el.scrollTop = el.scrollHeight;
+    }
+
+    function resetUI() {
+      document.getElementById('timer-display').textContent = '90';
+      document.getElementById('timer-display').style.color = '';
+      document.getElementById('current-drawer').textContent = '';
+      document.getElementById('secret-word').textContent = '';
+      document.getElementById('word-display').classList.add('hidden');
+      document.getElementById('log').innerHTML = '';
+    }
+  </script>
+
+  <script src="../js/ui/gameUI.js"></script>
+  <script>
+    const mock = new MockSocket();
+    const gameUI = new GameUI(mock);
+
+    async function runTimerScenario(seconds = 5) {
+      log(`Starting round with ${seconds}s`, 'muted');
+      mock.trigger('round_started', { is_drawer: true, word: 'TEST', seconds });
+
+      // Assert initial render
+      const timerEl = document.getElementById('timer-display');
+      let ok = timerEl.textContent === String(seconds);
+      log(`Initial timer shows ${seconds}s: ${ok ? 'OK' : 'FAIL'}`, ok ? 'pass' : 'fail');
+      if (!ok) return false;
+
+      // Wait half of the duration
+      await new Promise(r => setTimeout(r, Math.ceil(seconds/2)*1000));
+      const mid = Number(timerEl.textContent);
+      ok = mid < seconds && mid >= 0;
+      log(`Timer decreases over time: ${ok ? 'OK' : 'FAIL'} (now ${mid})`, ok ? 'pass' : 'fail');
+      if (!ok) return false;
+
+      // Wait until end
+      await new Promise(r => setTimeout(r, (seconds+1)*1000));
+      const end = Number(timerEl.textContent);
+      ok = end === 0;
+      log(`Timer reaches 0: ${ok ? 'OK' : 'FAIL'} (now ${end})`, ok ? 'pass' : 'fail');
+
+      // Color thresholds check
+      mock.trigger('round_started', { is_drawer: false, word: 'ABC', seconds: 35 });
+      await new Promise(r => setTimeout(r, 100));
+      const color35 = getComputedStyle(timerEl).color;
+      log(`Color at 35s set (orange-ish expected): ${color35}`, 'muted');
+
+      mock.trigger('timer_update', { seconds: 9 });
+      await new Promise(r => setTimeout(r, 100));
+      const color9 = getComputedStyle(timerEl).color;
+      log(`Color at 9s set (red-ish expected): ${color9}`, 'muted');
+
+      return true;
+    }
+
+    document.getElementById('run-test').addEventListener('click', async () => {
+      resetUI();
+      const ok = await runTimerScenario(5);
+      log(ok ? 'ALL CHECKS PASSED' : 'TEST FAILED', ok ? 'pass' : 'fail');
+      document.title = ok ? 'Timer Test - PASSED' : 'Timer Test - FAILED';
+    });
+
+    document.getElementById('reset').addEventListener('click', resetUI);
+
+    // Auto-run on load for CI-style validation
+    window.addEventListener('load', () => {
+      document.getElementById('run-test').click();
+    });
+  </script>
+</body>
+</html>
