@@ -1,104 +1,165 @@
 <!DOCTYPE html>
 <html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Vẽ và Đoán - Draw & Guess</title>
-    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/styles.css" />
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
-</head>
-<body>
+  </head>
+  <body>
     <div id="app">
-        <!-- Room Selection Screen -->
-        <div id="room-selection" class="screen active">
-            <div class="container">
-                <h1>Vẽ và Đoán</h1>
-                <div class="room-actions">
-                    <button id="create-room-btn" class="btn btn-primary">Tạo Phòng Mới</button>
-                    <div class="divider">hoặc</div>
-                    <div class="join-room-form">
-                        <input type="text" id="room-id-input" placeholder="Nhập mã phòng" maxlength="6">
-                        <input type="text" id="player-name-input" placeholder="Tên của bạn" maxlength="20">
-                        <button id="join-room-btn" class="btn btn-secondary">Tham Gia Phòng</button>
-                    </div>
-                </div>
-                <div id="room-id-display" class="room-id-display hidden">
-                    <p>Mã phòng của bạn:</p>
-                    <h2 id="room-id-text"></h2>
-                </div>
+      <!-- Room Selection Screen -->
+      <div id="room-selection" class="screen active">
+        <div class="container">
+          <h1>Vẽ và Đoán</h1>
+          <div class="room-actions">
+            <button id="create-room-btn" class="btn btn-primary">
+              Tạo Phòng Mới
+            </button>
+            <div class="divider">hoặc</div>
+            <div class="join-room-form">
+              <input
+                type="text"
+                id="room-id-input"
+                placeholder="Nhập mã phòng"
+                maxlength="6"
+              />
+              <input
+                type="text"
+                id="player-name-input"
+                placeholder="Tên của bạn"
+                maxlength="20"
+              />
+              <button id="join-room-btn" class="btn btn-secondary">
+                Tham Gia Phòng
+              </button>
             </div>
+          </div>
+          <div id="room-id-display" class="room-id-display hidden">
+            <p>Mã phòng của bạn:</p>
+            <h2 id="room-id-text"></h2>
+          </div>
         </div>
+      </div>
 
-        <!-- Game Screen -->
-        <div id="game-screen" class="screen">
-            <div class="game-container">
-                <!-- Left Panel: Players & Scoreboard -->
-                <div class="left-panel">
-                    <div class="panel-section">
-                        <h3>Người Chơi</h3>
-                        <div id="players-list" class="players-list"></div>
-                    </div>
-                    <div class="panel-section">
-                        <h3>Bảng Điểm</h3>
-                        <div id="scoreboard" class="scoreboard"></div>
-                    </div>
-                </div>
-
-                <!-- Center: Canvas Area -->
-                <div class="center-panel">
-                    <div class="game-header">
-                        <div id="timer-display" class="timer">90</div>
-                        <div id="current-drawer" class="drawer-info"></div>
-                    </div>
-                    
-                    <!-- Canvas Container -->
-                    <div id="canvas-container" class="canvas-container">
-                        <canvas id="game-canvas" width="800" height="600"></canvas>
-                    </div>
-
-                    <!-- Drawing Tools (only visible for drawer) -->
-                    <div id="drawing-tools" class="drawing-tools hidden">
-                        <div class="color-picker">
-                            <button class="color-btn" data-color="#000000" style="background-color: #000000;"></button>
-                            <button class="color-btn" data-color="#FF0000" style="background-color: #FF0000;"></button>
-                            <button class="color-btn" data-color="#00FF00" style="background-color: #00FF00;"></button>
-                            <button class="color-btn" data-color="#0000FF" style="background-color: #0000FF;"></button>
-                            <button class="color-btn" data-color="#FFFF00" style="background-color: #FFFF00;"></button>
-                            <button class="color-btn" data-color="#FF00FF" style="background-color: #FF00FF;"></button>
-                            <button class="color-btn" data-color="#00FFFF" style="background-color: #00FFFF;"></button>
-                            <button class="color-btn" data-color="#FFA500" style="background-color: #FFA500;"></button>
-                        </div>
-                        <div class="brush-controls">
-                            <label>Kích thước nét:</label>
-                            <input type="range" id="brush-size-slider" min="3" max="20" value="5">
-                            <span id="brush-size-display">5</span>
-                        </div>
-                        <button id="clear-canvas-btn" class="btn btn-danger">Xóa Canvas</button>
-                    </div>
-
-                    <!-- Word Display (only visible for drawer) -->
-                    <div id="word-display" class="word-display hidden">
-                        <p>Từ khóa của bạn:</p>
-                        <h2 id="secret-word"></h2>
-                    </div>
-                </div>
-
-                <!-- Right Panel: Chat -->
-                <div class="right-panel">
-                    <div class="panel-section">
-                        <h3>Chat</h3>
-                        <div id="chat-messages" class="chat-messages"></div>
-                        <div class="chat-input-container">
-                            <input type="text" id="chat-input" placeholder="Nhập tin nhắn hoặc đoán từ khóa..." maxlength="100">
-                            <button id="send-message-btn" class="btn btn-primary">Gửi</button>
-                        </div>
-                    </div>
-                </div>
+      <!-- Game Screen -->
+      <div id="game-screen" class="screen">
+        <div class="game-container">
+          <!-- Left Panel: Players & Scoreboard -->
+          <div class="left-panel">
+            <div class="panel-section">
+              <h3>Người Chơi</h3>
+              <div id="players-list" class="players-list"></div>
             </div>
-        </div>
+            <div class="panel-section">
+              <h3>Bảng Điểm</h3>
+              <div id="scoreboard" class="scoreboard"></div>
+            </div>
+          </div>
 
-        <!-- Notifications Container -->
-        <div id="notifications" class="notifications"></div>
+          <!-- Center: Canvas Area -->
+          <div class="center-panel">
+            <div class="game-header">
+              <div id="timer-display" class="timer">90</div>
+              <div id="current-drawer" class="drawer-info"></div>
+            </div>
+
+            <!-- Canvas Container -->
+            <div id="canvas-container" class="canvas-container">
+              <canvas id="game-canvas" width="800" height="600"></canvas>
+            </div>
+
+            <!-- Drawing Tools (only visible for drawer) -->
+            <div id="drawing-tools" class="drawing-tools hidden">
+              <div class="color-picker">
+                <button
+                  class="color-btn"
+                  data-color="#000000"
+                  style="background-color: #000000"
+                ></button>
+                <button
+                  class="color-btn"
+                  data-color="#FF0000"
+                  style="background-color: #ff0000"
+                ></button>
+                <button
+                  class="color-btn"
+                  data-color="#00FF00"
+                  style="background-color: #00ff00"
+                ></button>
+                <button
+                  class="color-btn"
+                  data-color="#0000FF"
+                  style="background-color: #0000ff"
+                ></button>
+                <button
+                  class="color-btn"
+                  data-color="#FFFF00"
+                  style="background-color: #ffff00"
+                ></button>
+                <button
+                  class="color-btn"
+                  data-color="#FF00FF"
+                  style="background-color: #ff00ff"
+                ></button>
+                <button
+                  class="color-btn"
+                  data-color="#00FFFF"
+                  style="background-color: #00ffff"
+                ></button>
+                <button
+                  class="color-btn"
+                  data-color="#FFA500"
+                  style="background-color: #ffa500"
+                ></button>
+              </div>
+              <div class="brush-controls">
+                <label>Kích thước nét:</label>
+                <input
+                  type="range"
+                  id="brush-size-slider"
+                  min="3"
+                  max="20"
+                  value="5"
+                />
+                <span id="brush-size-display">5</span>
+              </div>
+              <button id="clear-canvas-btn" class="btn btn-danger">
+                Xóa Canvas
+              </button>
+            </div>
+
+            <!-- Word Display (only visible for drawer) -->
+            <div id="word-display" class="word-display hidden">
+              <p>Từ khóa của bạn:</p>
+              <h2 id="secret-word"></h2>
+            </div>
+          </div>
+
+          <!-- Right Panel: Chat -->
+          <div class="right-panel">
+            <div class="panel-section">
+              <h3>Chat</h3>
+              <div id="chat-messages" class="chat-messages"></div>
+              <div class="chat-input-container">
+                <input
+                  type="text"
+                  id="chat-input"
+                  placeholder="Nhập tin nhắn hoặc đoán từ khóa..."
+                  maxlength="100"
+                />
+                <button id="send-message-btn" class="btn btn-primary">
+                  Gửi
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Notifications Container -->
+      <div id="notifications" class="notifications"></div>
     </div>
 
     <!-- Scripts -->
@@ -107,11 +168,11 @@
     <script src="js/canvas/drawerCanvas.js"></script>
     <script src="js/canvas/viewerCanvas.js"></script>
     <script src="js/ui/roomUI.js"></script>
+    <script src="js/ui/timer.js"></script>
     <script src="js/ui/gameUI.js"></script>
     <script src="js/ui/scoreboard.js"></script>
     <script src="js/ui/chat.js"></script>
     <script src="js/ui/notifications.js"></script>
     <script src="js/main.js"></script>
-</body>
+  </body>
 </html>
-
