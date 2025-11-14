@@ -134,19 +134,21 @@ def broadcast_brush_size_change(player_id, size):
 
 def broadcast_canvas_clear(player_id):
     """
-    Prepare canvas clear event data for broadcast
-    Args:
-        player_id: Player identifier
-    Returns:
-        tuple: (room_id: str|None, event_data: dict|None)
+    Khi 1 player (thường là drawer) bấm xóa canvas
+    Trả về (room_id, event_data) để app.py broadcast
     """
-    room_id = get_player_room(player_id)
-    if not room_id:
+    player = data_store.get_player(player_id)
+    if not player:
         return None, None
-    
+
+    room_id = player.room_id
+
     event_data = {
-        'type': 'clear'
+        "type": "clear",          # <<< QUAN TRỌNG: type cố định, ví dụ 'clear'
+        "player_id": player_id,
+        "room_id": room_id,
     }
-    
+
     return room_id, event_data
+
 
