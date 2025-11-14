@@ -29,7 +29,6 @@ socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
 ACTIVE_TIMERS = {}
 ROUND_DURATION = 90  # giây / round
 
-
 def _broadcast_round_started(room_id, round_info):
     """
     Gửi sự kiện round_started cho drawer và những người còn lại
@@ -109,19 +108,16 @@ def _start_round_timer(room_id, duration=ROUND_DURATION):
   socketio.start_background_task(_timer_task, room_id, duration)
 # ================== END HELPERS ==================
 
-
 @app.route('/')
 def index():
     """Health check endpoint"""
     return {'status': 'ok', 'message': 'Draw & Guess Server is running'}
-
 
 @socketio.on('connect')
 def handle_connect():
     """Handle client connection"""
     print(f"Client connected: {request.sid}")
     emit('connected', {'message': 'Connected to server'})
-
 
 @socketio.on('disconnect')
 def handle_disconnect():
@@ -133,11 +129,20 @@ def handle_disconnect():
     
     if room_id:
         leave_room(room_id)
+
+        # Lấy danh sách player còn lại trong phòng
+        players_after = room_handler.get_room_players(room_id)
+
         # Notify other players
-        socketio.emit('player_left', {
-            'player_id': request.sid,
-            'player_name': player_name
-        }, room=room_id)
+        socketio.emit(
+            'player_left',
+            {
+                'player_id': request.sid,
+                'player_name': player_name,
+                'players': players_after,   # 🔥 thêm list player
+            },
+            room=room_id,
+        )
 
 
 @socketio.on('create_room')
@@ -152,7 +157,6 @@ def handle_create_room(data=None):
     join_room(room_id)
 
     emit('room_created', {'room_id': room_id})
-
 
 
 @socketio.on('join_room')
@@ -170,17 +174,19 @@ def handle_join_room(data):
         return
     
     join_room(room_id)
+    players_list = room_handler.get_room_players(room_id)
     
     socketio.emit('player_joined', {
         'player': {
             'id': request.sid,
             'name': player_name,
             'score': 0
-        }
-    }, room=room_id)
+        },
+        'players': players_list,
+    }, room=room_id
+    )
     
     emit('room_joined', room_data)
-
 
 @socketio.on('leave_room')
 def handle_leave_room(data=None):
@@ -189,10 +195,75 @@ def handle_leave_room(data=None):
     
     if room_id:
         leave_room(room_id)
-        socketio.emit('player_left', {
-            'player_id': request.sid,
-            'player_name': player_name
-        }, room=room_id)
+
+        players_after = room_handler.get_room_players(room_id)
+
+        socketio.emit(
+            'player_left',
+            {
+                'player_id': request.sid,
+                'player_name': player_name,
+                'players': players_after,   # 🔥 FE dùng để update list
+            },
+            room=room_id,
+        )
+
+@socketio.on('kick_player')
+def handle_kick_player(data):
+    """
+    Host kick 1 player ra khỏi room
+    data: { room_id: str, target_id: str }
+    """
+    room_id = data.get("room_id")
+    target_id = data.get("target_id")
+    requester_id = request.sid  # socket id của thằng host
+
+    if not room_id or not target_id:
+        emit("error", {"message": "room_id và target_id là bắt buộc"})
+        return
+
+    # 1. Chỉ host mới có quyền kick
+    if not room_handler.is_room_host(room_id, requester_id):
+        emit("error", {"message": "Chỉ chủ phòng mới có quyền kick người chơi"})
+        return
+
+    # 2. Kiểm tra target có trong room
+    if not room_handler.room_has_player(room_id, target_id):
+        emit("error", {"message": "Người chơi không thuộc phòng này"})
+        return
+
+    # 3. Gỡ player khỏi room + storage
+    kicked_room_id, kicked_name = room_handler.remove_player_from_room(target_id)
+
+    if not kicked_room_id:
+        emit("error", {"message": "Không thể kick người chơi này"})
+        return
+
+    # Cho socket target rời room socket.io
+    leave_room(kicked_room_id, sid=target_id)
+
+    # 4. Gửi event riêng cho người bị kick
+    socketio.emit(
+        "kicked",                             # 🔥 event riêng
+        {
+            "room_id": kicked_room_id,
+            "player_id": target_id,
+            "player_name": kicked_name,
+        },
+        room=target_id,                       # chỉ gửi cho chính nó
+    )
+
+    # 5. Gửi event player_left cho cả phòng để cập nhật list & scoreboard
+    players_after = room_handler.get_room_players(kicked_room_id)
+    socketio.emit(
+        "player_left",
+        {
+            "player_id": target_id,
+            "player_name": kicked_name,
+            "players": players_after,         # 🔥 để GameUI updatePlayersList
+        },
+        room=kicked_room_id,
+    )
 
 # ============= GAME EVENTS =============
 @socketio.on('start_game')
@@ -200,6 +271,12 @@ def handle_start_game(data):
     room_id = data.get('room_id')
     if not room_id:
         emit('error', {'message': 'room_id is required'})
+        return
+
+    if ACTIVE_TIMERS.get(room_id):
+        emit('error', {
+            'message': 'Round hiện tại đang chạy, không thể bắt đầu lại.'
+        })
         return
 
     success, error = game_handler.start_game(room_id)
@@ -240,7 +317,6 @@ def handle_drawing_start(data):
     if room_id:
         socketio.emit('canvas_update', event_data, room=room_id, include_self=False)
 
-
 @socketio.on('drawing_move')
 def handle_drawing_move(data):
     """Handle drawing move event"""
@@ -251,7 +327,6 @@ def handle_drawing_move(data):
     if room_id:
         socketio.emit('canvas_update', event_data, room=room_id, include_self=False)
 
-
 @socketio.on('drawing_end')
 def handle_drawing_end(data):
     """Handle drawing end event"""
@@ -259,7 +334,6 @@ def handle_drawing_end(data):
     
     if room_id:
         socketio.emit('canvas_update', event_data, room=room_id, include_self=False)
-
 
 @socketio.on('change_color')
 def handle_change_color(data):
@@ -271,7 +345,6 @@ def handle_change_color(data):
     if room_id:
         socketio.emit('canvas_update', event_data, room=room_id, include_self=False)
 
-
 @socketio.on('change_brush_size')
 def handle_change_brush_size(data):
     """Handle brush size change event"""
@@ -281,7 +354,6 @@ def handle_change_brush_size(data):
     
     if room_id:
         socketio.emit('canvas_update', event_data, room=room_id, include_self=False)
-
 
 @socketio.on('clear_canvas')
 def handle_clear_canvas(data=None):
@@ -324,7 +396,6 @@ def handle_clear_canvas(data=None):
 
 
 
-
 # ============= CHAT / GUESS EVENTS =============
 @socketio.on('send_message')
 def handle_send_message(data):
@@ -364,4 +435,3 @@ def handle_send_message(data):
 if __name__ == '__main__':
     port = int(os.getenv('PORT', 5000))
     socketio.run(app, host='0.0.0.0', port=port, debug=True)
-

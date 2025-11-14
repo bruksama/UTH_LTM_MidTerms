@@ -14,7 +14,6 @@ from storage import data_store
 from models.game import Game
 from utils.word_list import load_word_list  # ← DÙNG UTIL ĐÃ VIẾT
 
-
 def start_game(room_id):
     """Start a new game in the room"""
     room = data_store.get_room(room_id)
@@ -29,7 +28,6 @@ def start_game(room_id):
 
     data_store.add_game(game)
     return True, None
-
 
 def start_round(room_id):
     """Choose drawer, choose word, reset timer"""
@@ -51,7 +49,6 @@ def start_round(room_id):
     data_store.add_game(game)
     return result  # {drawer_id, word}
 
-
 def end_round(room_id):
     """Finish the round and return the word"""
     game = data_store.get_game(room_id)
@@ -62,7 +59,6 @@ def end_round(room_id):
 
     data_store.add_game(game)
     return word
-
 
 def check_guess(room_id, player_id, guess):
     """Check if player's guess is correct"""
@@ -78,33 +74,37 @@ def check_guess(room_id, player_id, guess):
 
     return is_correct
 
-
 def calculate_scores(room_id, guesser_id):
     """Add points for drawer and guesser"""
     game = data_store.get_game(room_id)
     if not game:
         return False
 
-    drawer = data_store.get_player(game.drawer_id)
-    guesser = data_store.get_player(guesser_id)
+    drawer_id = getattr(game, "current_drawer_id", None) or getattr(game, "drawer_id", None)
+    if not drawer_id:
+        return False
 
+    drawer = data_store.get_player(drawer_id)
+    guesser = data_store.get_player(guesser_id)
+    if not drawer or not guesser:
+        return False
+
+    # Hàm này sẽ tự cộng điểm cho drawer & guesser
     game.calculate_scores(drawer, guesser)
 
-    if drawer:
-        data_store.update_player(drawer)
-    if guesser:
-        data_store.update_player(guesser)
+    # Không cần data_store.update_player, vì Player object đang được
+    # giữ reference trong room / data_store rồi
+    data_store.add_game(game)   # nếu muốn lưu lại state game
 
     return True
 
-
 def update_timer(room_id, seconds):
-    """
-    Update the round timer
-    Args:
-        room_id: Room identifier
-        seconds: Remaining seconds
-    """
-    # TODO: Implement timer update logic
-    pass
+    """Update countdown timer"""
+    game = data_store.get_game(room_id)
+    if not game:
+        return None
 
+    game.timer = seconds
+    data_store.add_game(game)
+
+    return seconds
