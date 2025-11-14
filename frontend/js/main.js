@@ -19,6 +19,8 @@ const playerName =
   "Player_" + Math.floor(Math.random() * 1000);
 localStorage.setItem("roomId", roomId);
 localStorage.setItem("playerName", playerName);
+window.currentRoomId = null; // room hiện tại
+window.isRoomHost = false;
 
 // Make components globally accessible
 window.roomUI = roomUI;
@@ -52,17 +54,53 @@ socketClient.on("connected", () => {
   notifications.info("Đã kết nối với server");
   socketClient.emit("join_room", { room_id: roomId, player_name: playerName });
 });
+socketClient.on("room_created", (data) => {
+  console.log("Room created:", data.room_id);
+
+  // Đánh dấu mình là host
+  window.isRoomHost = true;
+  window.currentRoomId = data.room_id;
+
+  // Lưu lại để reload cũng nhớ
+  localStorage.setItem("roomId", data.room_id);
+
+  // Hiện code phòng nếu UI có phần hiển thị
+  const roomIdDisplay = document.getElementById("room-id-text");
+  const roomIdBlock = document.getElementById("room-id-display");
+  if (roomIdDisplay) roomIdDisplay.textContent = data.room_id;
+  if (roomIdBlock) roomIdBlock.classList.remove("hidden");
+
+  // Cho phép host start game (nút)
+  const startGameBtn = document.getElementById("start-game-btn");
+  if (startGameBtn) startGameBtn.classList.remove("hidden");
+});
 
 socketClient.on("room_joined", (data) => {
   console.log("Room joined:", data.room_id);
+
+  // Cập nhật room hiện tại
+  if (data.room_id) {
+    window.currentRoomId = data.room_id;
+  }
+
   // Initialize scoreboard with current players
   if (data.players && Array.isArray(data.players) && window.scoreboard) {
     window.scoreboard.update(data.players);
   }
   if (data?.room_id) {
     socketClient.emit("request_chat_history", { room_id: data.room_id });
-    // dòng system cho chính mình
-    if (window.chat) window.chat.displaySystemMessage(`Bạn đã tham gia phòng ${data.room_id}`);
+    if (window.chat)
+      window.chat.displaySystemMessage(`Bạn đã tham gia phòng ${data.room_id}`);
+  }
+
+  // Nếu mình là host (do vừa tạo phòng), đảm bảo nút Start hiện
+  const startGameBtn = document.getElementById("start-game-btn");
+  if (startGameBtn) {
+    if (window.isRoomHost) {
+      startGameBtn.classList.remove("hidden");
+    } else {
+      startGameBtn.classList.add("hidden");
+    }
   }
 });
 
@@ -102,7 +140,8 @@ socketClient.on("round_ended", (data) => {
   // Thông báo + system line (hiển thị từ khoá nếu có)
   const revealed = data?.word ? ` Từ khóa: ${data.word}` : "";
   notifications.info(`Vòng kết thúc.${revealed}`);
-  if (window.chat) window.chat.displaySystemMessage(`Vòng kết thúc.${revealed}`);
+  if (window.chat)
+    window.chat.displaySystemMessage(`Vòng kết thúc.${revealed}`);
 });
 
 socketClient.on("game_ended", (data) => {
@@ -146,7 +185,8 @@ socketClient.on("player_joined", (data) => {
   // Toast + system line
   const name = data?.player?.name || "Người chơi";
   notifications.info(`${name} đã tham gia phòng`);
-  if (window.chat) window.chat.displaySystemMessage(`${name} đã tham gia phòng`);
+  if (window.chat)
+    window.chat.displaySystemMessage(`${name} đã tham gia phòng`);
 });
 
 socketClient.on("player_left", (data) => {
@@ -191,7 +231,7 @@ socketClient.on("drawer_changed", (data) => {
 socketClient.on("canvas_cleared", (data) => {
   console.log("Canvas cleared by drawer");
   if (window.viewerCanvas) {
-    window.viewerCanvas.clearCanvas();
+    window.viewerCanvas.clearCanvas(true);
   }
 });
 
@@ -200,7 +240,8 @@ socketClient.on("correct_guess", (data) => {
   const name = data?.player_name || "Ai đó";
   const word = data?.word || "???";
   notifications.success(`🎉 ${name} đã đoán đúng: ${word}`);
-  if (window.chat) window.chat.displaySystemMessage(`🎉 ${name} đã đoán đúng: ${word}`);
+  if (window.chat)
+    window.chat.displaySystemMessage(`🎉 ${name} đã đoán đúng: ${word}`);
 });
 
 socketClient.on("disconnect", () => {
@@ -217,6 +258,25 @@ socketClient.on("error", (data) => {
   console.error("Socket error:", data);
   notifications.error(data.message || "Đã xảy ra lỗi");
 });
+// ================== START GAME BUTTON ==================
+const startGameBtn = document.getElementById("start-game-btn");
+if (startGameBtn) {
+  startGameBtn.addEventListener("click", () => {
+    if (!window.currentRoomId) {
+      notifications.error("Chưa xác định được phòng hiện tại.");
+      return;
+    }
+
+    if (!window.isRoomHost) {
+      notifications.error("Chỉ chủ phòng mới có thể bắt đầu trận.");
+      return;
+    }
+
+    console.log("Host start_game for room:", window.currentRoomId);
+    socketClient.emit("start_game", { room_id: window.currentRoomId });
+  });
+}
+// ================== END START GAME BUTTON ==================
 
 // Handle page unload
 window.addEventListener("beforeunload", () => {
