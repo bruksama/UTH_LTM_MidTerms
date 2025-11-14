@@ -14,22 +14,22 @@ from models.player import Player
 from storage import data_store
 
 
-def create_room():
+def create_room(host_id):
     """
     Create a new game room
+    Args:
+        host_id: socket_id của người tạo phòng (host)
     Returns:
         str: Room ID of created room
     """
-    # Generate 6-character room ID
     room_id = str(uuid.uuid4())[:6].upper()
-    
-    # Create Room object
-    room = Room(room_id)
-    
-    # Store in data store
+
+    # Tạo Room với host_id
+    room = Room(room_id, host_id)
+
     data_store.add_room(room)
-    
     return room_id
+
 
 
 def add_player_to_room(room_id, player_id, player_name):

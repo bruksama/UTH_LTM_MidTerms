@@ -15,73 +15,69 @@ class Room:
         game_state (str): Current game state
         created_at (datetime): Room creation timestamp
     """
-    def __init__(self, room_id):
+    def __init__(self, room_id, host_id):
         self.id = room_id
-        self.players = []  # List of player IDs
-        self.game_state = 'waiting'  # waiting, playing, round_ended, game_ended
+        self.host_id = host_id              # NEW: chủ phòng
+        self.players = [host_id]            # Host vào trước
+        self.current_game = None            # NEW: Game object
+        self.game_state = 'waiting'         # waiting, playing, ended
         self.created_at = datetime.now()
+
+        self.max_players = 8                # NEW: giới hạn tối đa
     
     def add_player(self, player_id):
-        """
-        Add a player to the room
-        Args:
-            player_id: Player identifier to add
-        Returns:
-            Boolean indicating success
-        """
+        """Add a player to the room."""
+        if len(self.players) >= self.max_players:
+            return False
+
         if player_id not in self.players:
             self.players.append(player_id)
             return True
+
         return False
     
     def remove_player(self, player_id):
-        """
-        Remove a player from the room
-        Args:
-            player_id: Player identifier to remove
-        Returns:
-            Boolean indicating if player was removed
-        """
+        """Remove a player from the room."""
         if player_id in self.players:
             self.players.remove(player_id)
+
+            # Nếu host rời → chuyển quyền host cho người tiếp theo
+            if player_id == self.host_id and self.players:
+                self.host_id = self.players[0]
+
             return True
+
         return False
-    
+    def is_host(self, player_id):
+        """Check if a player is the room host."""
+        return player_id == self.host_id
+    def has_player(self, player_id):
+        """Check if player is in room."""
+        return player_id in self.players
+
     def get_player_count(self):
-        """
-        Get the number of players in the room
-        Returns:
-            Integer count of players
-        """
         return len(self.players)
     
     def can_start_game(self, min_players=2):
-        """
-        Check if the room has enough players to start
-        Args:
-            min_players: Minimum number of players required
-        Returns:
-            Boolean indicating if game can start
-        """
         return self.get_player_count() >= min_players
-    
-    def to_dict(self, include_players_data=False):
-        """
-        Convert room to dictionary for JSON serialization
-        Args:
-            include_players_data: If True, includes full player data (requires storage access)
-        Returns:
-            Dictionary with room data
-        """
+    def set_game(self, game_obj):
+        """Assign a game instance to this room."""
+        self.current_game = game_obj
+        self.game_state = "playing"
+
+    def end_game(self):
+        self.current_game = None
+        self.game_state = "waiting"
+    def to_dict(self, include_players=False):
         data = {
             'id': self.id,
+            'host_id': self.host_id,
             'player_count': self.get_player_count(),
             'game_state': self.game_state,
-            'created_at': self.created_at.isoformat() if self.created_at else None
+            'created_at': self.created_at.isoformat()
         }
-        
-        if not include_players_data:
-            data['players'] = self.players
-        
-        return data
 
+        if include_players:
+            data['players'] = self.players
+
+        return data

@@ -20,7 +20,10 @@ class Player:
         self.name = name
         self.score = 0
         self.room_id = room_id
+
         self.is_drawer = False
+        self.guessed_correctly = False   # NEW: dùng trong check_guess
+        self.connected = True            # NEW: offline/online tracking
     
     def add_score(self, points):
         """
@@ -37,17 +40,22 @@ class Player:
             is_drawer: Boolean indicating drawer status
         """
         self.is_drawer = is_drawer
+    def mark_guessed(self):
+        """Mark the player as having guessed correctly."""
+        self.guessed_correctly = True
+    def reset_round_state(self):
+        """Reset state at the start of each round."""
+        self.guessed_correctly = False
+        self.is_drawer = False
+
     
     def to_dict(self):
-        """
-        Convert player to dictionary for JSON serialization
-        Returns:
-            Dictionary with player data
-        """
         return {
             'id': self.id,
             'name': self.name,
             'score': self.score,
-            'is_drawer': self.is_drawer
+            'is_drawer': self.is_drawer,
+            'guessed_correctly': self.guessed_correctly,
+            'connected': self.connected
         }
 

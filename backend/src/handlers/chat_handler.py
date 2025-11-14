@@ -1,49 +1,62 @@
 """
 Chat Handler
-Manages chat messages and guess processing
+Xử lý chat & đoán từ khóa
 """
-import sys
+
 import os
+import sys
 
-# Add parent directory to path for imports
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+# === FIX PATH ===
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.abspath(os.path.join(BASE_DIR, ".."))
+sys.path.insert(0, PROJECT_ROOT)
 
+# === Imports chuẩn ===
 from storage import data_store
+from models.game import Game
+from handlers import game_handler  # FIX IMPORT
 
-
-def process_message(player_id, message):
+def process_message(player_id: str, message: str):
     """
-    Process chat message
-    Args:
-        player_id: Player identifier
-        message: Message text
+    Xử lý chat + đoán từ khóa
     Returns:
-        tuple: (room_id: str|None, message_data: dict|None, is_correct_guess: bool)
-    
-    Note: is_correct_guess is always False for now
-    TODO: Will integrate with game_handler.check_guess() when game logic is implemented
+        (room_id, message_data, is_correct_guess)
     """
-    # Get player
     player = data_store.get_player(player_id)
     if not player:
         return None, None, False
-    
-    room_id = player.room_id
-    
-    # Sanitize message (strip whitespace)
-    sanitized_message = message.strip()
-    
-    # TODO: Future enhancement - check if message is a correct guess
-    # This will be implemented when game logic is added
-    # For now, all messages are treated as regular chat
-    is_correct_guess = False
-    
-    # Prepare message data for broadcast
-    message_data = {
-        'player_name': player.name,
-        'message': sanitized_message,
-        'is_guess': False  # TODO: Set to True when game logic checks guess
-    }
-    
-    return room_id, message_data, is_correct_guess
 
+    room_id = player.room_id
+    text = (message or "").strip()
+    if not text:
+        return room_id, None, False
+
+    # Chat bình thường
+    message_data = {
+        "player_id": player.id,
+        "player_name": player.name,
+        "message": text,
+        "is_system": False,
+    }
+
+    # Lấy game của phòng
+    game = data_store.get_game(room_id)
+    if not game:
+        return room_id, message_data, False
+
+    # Debug đoán từ
+    print(
+        "[GUESS DEBUG]",
+        "room:", room_id,
+        "| player:", player.name,
+        "| guess:", repr(text),
+        "| current_word:", repr(game.current_word),
+    )
+
+    # Check đoán đúng
+    is_correct = game.check_guess(text)
+
+    if is_correct:
+        game_handler.calculate_scores(room_id, player_id)
+
+    return room_id, message_data, is_correct
