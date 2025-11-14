@@ -38,7 +38,10 @@ class GameUI {
       // Update players list when possible
       if (Array.isArray(data?.players)) {
         this.updatePlayersList(data.players);
-      } else if (window.scoreboard && Array.isArray(window.scoreboard.sortedPlayers)) {
+      } else if (
+        window.scoreboard &&
+        Array.isArray(window.scoreboard.sortedPlayers)
+      ) {
         this.updatePlayersList(window.scoreboard.sortedPlayers);
       }
     });
@@ -46,7 +49,10 @@ class GameUI {
     this.socket.on("player_left", (data) => {
       if (Array.isArray(data?.players)) {
         this.updatePlayersList(data.players);
-      } else if (window.scoreboard && Array.isArray(window.scoreboard.sortedPlayers)) {
+      } else if (
+        window.scoreboard &&
+        Array.isArray(window.scoreboard.sortedPlayers)
+      ) {
         this.updatePlayersList(window.scoreboard.sortedPlayers);
       }
     });
@@ -54,10 +60,17 @@ class GameUI {
 
   handleGameStarted(data) {
     console.log("Game started:", data);
+    if (window.viewerCanvas) {
+      window.viewerCanvas.clearCanvas(true);
+    }
+    if (window.drawerCanvas) {
+      window.drawerCanvas.clearCanvas();
+    }
     // Initialize game UI state
     this.isDrawer = false;
     this.currentWord = "";
-    const initialSeconds = typeof data?.seconds === "number" ? data.seconds : 90;
+    const initialSeconds =
+      typeof data?.seconds === "number" ? data.seconds : 90;
     this.remainingSeconds = initialSeconds;
     this.updateTimer(this.remainingSeconds);
 
@@ -79,6 +92,14 @@ class GameUI {
   }
 
   handleRoundStarted(data) {
+    // 🔥 MỖI ROUND MỚI → RESET CANVAS CHO CẢ DRAWER & VIEWER
+    if (window.viewerCanvas) {
+      window.viewerCanvas.clearCanvas(true); // chỉ xóa local, không emit gì
+    }
+    if (window.drawerCanvas) {
+      window.drawerCanvas.clearCanvas(); // xóa local + emit clear_canvas cho phòng
+    }
+
     this.isDrawer = data.is_drawer || false;
     this.currentWord = data.word || "";
 
