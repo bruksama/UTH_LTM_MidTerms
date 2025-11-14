@@ -192,16 +192,36 @@ class GameUI {
     if (!playersList) return;
 
     playersList.innerHTML = "";
+
     players.forEach((player) => {
       const playerItem = document.createElement("div");
       playerItem.className = "player-item";
       if (player.is_drawer) {
         playerItem.classList.add("drawer");
       }
+
+      // Tạo innerHTML cơ bản
       playerItem.innerHTML = `
-                <span>${sanitizeHTML(player.name)}</span>
-                <span>${player.score || 0}</span>
-            `;
+      <span>${sanitizeHTML(player.name)}</span>
+      <span>${player.score || 0}</span>
+    `;
+
+      // Nếu mình là host và target không phải chính mình → thêm nút Kick
+      if (window.isRoomHost && player.id !== window.socketClient?.socket?.id) {
+        const btn = document.createElement("button");
+        btn.textContent = "Kick";
+        btn.className = "btn btn-danger btn-kick";
+        btn.style.marginLeft = "8px";
+        btn.addEventListener("click", () => {
+          if (!window.currentRoomId) return;
+          socketClient.emit("kick_player", {
+            room_id: window.currentRoomId,
+            target_id: player.id,
+          });
+        });
+        playerItem.appendChild(btn);
+      }
+
       playersList.appendChild(playerItem);
     });
   }

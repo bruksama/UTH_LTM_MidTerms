@@ -85,18 +85,24 @@ def calculate_scores(room_id, guesser_id):
     if not game:
         return False
 
-    drawer = data_store.get_player(game.drawer_id)
-    guesser = data_store.get_player(guesser_id)
 
+    drawer_id = getattr(game, "current_drawer_id", None) or getattr(game, "drawer_id", None)
+    if not drawer_id:
+        return False
+
+    drawer = data_store.get_player(drawer_id)
+    guesser = data_store.get_player(guesser_id)
+    if not drawer or not guesser:
+        return False
+
+    # Hàm này sẽ tự cộng điểm cho drawer & guesser
     game.calculate_scores(drawer, guesser)
 
-    if drawer:
-        data_store.update_player(drawer)
-    if guesser:
-        data_store.update_player(guesser)
+    # Không cần data_store.update_player, vì Player object đang được
+    # giữ reference trong room / data_store rồi
+    data_store.add_game(game)   # nếu muốn lưu lại state game
 
     return True
-
 
 def update_timer(room_id, seconds):
     """Update countdown timer"""

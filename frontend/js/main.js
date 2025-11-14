@@ -136,7 +136,11 @@ socketClient.on("round_ended", (data) => {
   if (window.scoreboard && data && Array.isArray(data.scores)) {
     window.scoreboard.applyRoundResults(data.scores);
   }
-
+  const startGameBtn = document.getElementById("start-game-btn");
+  if (startGameBtn && window.isRoomHost) {
+    startGameBtn.disabled = false;
+    startGameBtn.classList.remove("btn-disabled"); // nếu có CSS
+  }
   // Thông báo + system line (hiển thị từ khoá nếu có)
   const revealed = data?.word ? ` Từ khóa: ${data.word}` : "";
   notifications.info(`Vòng kết thúc.${revealed}`);
@@ -161,6 +165,12 @@ socketClient.on("game_ended", (data) => {
     window.scoreboard.setDrawer(null);
   }
 
+  const startGameBtn = document.getElementById("start-game-btn");
+  if (startGameBtn && window.isRoomHost) {
+    startGameBtn.disabled = false;
+    startGameBtn.classList.remove("btn-disabled");
+  }
+
   // Thông báo + system line
   notifications.info("Trận đấu đã kết thúc!");
   if (window.chat) window.chat.displaySystemMessage("Trận đấu đã kết thúc!");
@@ -172,6 +182,11 @@ socketClient.on("game_started", (data) => {
     window.scoreboard.update(data.players);
   }
 
+  const startGameBtn = document.getElementById("start-game-btn");
+  if (startGameBtn && window.isRoomHost) {
+    startGameBtn.disabled = true;
+    startGameBtn.classList.add("btn-disabled"); // nếu có CSS cho disabled
+  }
   // Thông báo + system line
   notifications.info("Trận đấu bắt đầu!");
   if (window.chat) window.chat.displaySystemMessage("Trận đấu bắt đầu!");
@@ -197,6 +212,24 @@ socketClient.on("player_left", (data) => {
   const name = data?.player_name || "Người chơi";
   notifications.info(`${name} đã rời phòng`);
   if (window.chat) window.chat.displaySystemMessage(`${name} đã rời phòng`);
+});
+
+socketClient.on("player_kicked", (data) => {
+  const name = data?.player_name || "Người chơi";
+  notifications.info(`${name} đã bị kick khỏi phòng`);
+  if (window.chat) {
+    window.chat.displaySystemMessage(`${name} đã bị kick khỏi phòng`);
+  }
+
+  // Nếu mình là người bị kick → quay về màn chọn phòng
+  if (data.player_id === socketClient.socket.id) {
+    notifications.error("Bạn đã bị kick khỏi phòng.");
+    // Tuỳ UI của mày, ví dụ:
+    document.getElementById("game-screen")?.classList.remove("active");
+    document.getElementById("room-selection")?.classList.add("active");
+  }
+
+  // Cập nhật lại scoreboard nếu cần: có thể emit 'request_room_state' hoặc rely vào player_left
 });
 
 socketClient.on("scores_updated", (data) => {
