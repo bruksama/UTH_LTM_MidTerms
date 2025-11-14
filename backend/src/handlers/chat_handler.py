@@ -57,9 +57,6 @@ def process_message(player_id: str, message: str):
     is_correct = game.check_guess(text)
 
     if is_correct:
-        # Cộng điểm nhưng KHÔNG được làm sập handler
-        try:
-            game_handler.calculate_scores(room_id, player_id)
-        except Exception as e:
-            print("[SCORE ERROR]", e)
+        game_handler.calculate_scores(room_id, player_id)
+
     return room_id, message_data, is_correct

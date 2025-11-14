@@ -133,21 +133,11 @@ def handle_disconnect():
     
     if room_id:
         leave_room(room_id)
-
-        # Lấy danh sách player còn lại trong phòng
-        players_after = room_handler.get_room_players(room_id)
-
         # Notify other players
-        socketio.emit(
-            'player_left',
-            {
-                'player_id': request.sid,
-                'player_name': player_name,
-                'players': players_after,   # 🔥 thêm list player
-            },
-            room=room_id,
-        )
-
+        socketio.emit('player_left', {
+            'player_id': request.sid,
+            'player_name': player_name
+        }, room=room_id)
 
 
 @socketio.on('create_room')
@@ -180,17 +170,14 @@ def handle_join_room(data):
         return
     
     join_room(room_id)
-    players_list = room_handler.get_room_players(room_id)
     
     socketio.emit('player_joined', {
         'player': {
             'id': request.sid,
             'name': player_name,
             'score': 0
-        },
-        'players': players_list,
-    }, room=room_id
-    )
+        }
+    }, room=room_id)
     
     emit('room_joined', room_data)
 
@@ -202,76 +189,10 @@ def handle_leave_room(data=None):
     
     if room_id:
         leave_room(room_id)
-
-        players_after = room_handler.get_room_players(room_id)
-
-        socketio.emit(
-            'player_left',
-            {
-                'player_id': request.sid,
-                'player_name': player_name,
-                'players': players_after,   # 🔥 FE dùng để update list
-            },
-            room=room_id,
-        )
-
-@socketio.on('kick_player')
-def handle_kick_player(data):
-    """
-    Host kick 1 player ra khỏi room
-    data: { room_id: str, target_id: str }
-    """
-    room_id = data.get("room_id")
-    target_id = data.get("target_id")
-    requester_id = request.sid  # socket id của thằng host
-
-    if not room_id or not target_id:
-        emit("error", {"message": "room_id và target_id là bắt buộc"})
-        return
-
-    # 1. Chỉ host mới có quyền kick
-    if not room_handler.is_room_host(room_id, requester_id):
-        emit("error", {"message": "Chỉ chủ phòng mới có quyền kick người chơi"})
-        return
-
-    # 2. Kiểm tra target có trong room
-    if not room_handler.room_has_player(room_id, target_id):
-        emit("error", {"message": "Người chơi không thuộc phòng này"})
-        return
-
-    # 3. Gỡ player khỏi room + storage
-    kicked_room_id, kicked_name = room_handler.remove_player_from_room(target_id)
-
-    if not kicked_room_id:
-        emit("error", {"message": "Không thể kick người chơi này"})
-        return
-
-    # Cho socket target rời room socket.io
-    leave_room(kicked_room_id, sid=target_id)
-
-    # 4. Gửi event riêng cho người bị kick
-    socketio.emit(
-        "kicked",                             # 🔥 event riêng
-        {
-            "room_id": kicked_room_id,
-            "player_id": target_id,
-            "player_name": kicked_name,
-        },
-        room=target_id,                       # chỉ gửi cho chính nó
-    )
-
-    # 5. Gửi event player_left cho cả phòng để cập nhật list & scoreboard
-    players_after = room_handler.get_room_players(kicked_room_id)
-    socketio.emit(
-        "player_left",
-        {
-            "player_id": target_id,
-            "player_name": kicked_name,
-            "players": players_after,         # 🔥 để GameUI updatePlayersList
-        },
-        room=kicked_room_id,
-    )
-
+        socketio.emit('player_left', {
+            'player_id': request.sid,
+            'player_name': player_name
+        }, room=room_id)
 
 # ============= GAME EVENTS =============
 @socketio.on('start_game')
@@ -279,12 +200,6 @@ def handle_start_game(data):
     room_id = data.get('room_id')
     if not room_id:
         emit('error', {'message': 'room_id is required'})
-        return
-
-    if ACTIVE_TIMERS.get(room_id):
-        emit('error', {
-            'message': 'Round hiện tại đang chạy, không thể bắt đầu lại.'
-        })
         return
 
     success, error = game_handler.start_game(room_id)
