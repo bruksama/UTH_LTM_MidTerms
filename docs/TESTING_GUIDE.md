@@ -1,6 +1,6 @@
-# 🧪 Hướng dẫn Testing Backend
+# Hướng dẫn Testing Backend
 
-## 📁 Cấu trúc Tests
+## Cấu trúc Tests
 
 Đã tạo thư mục `tests/` với các file:
 
@@ -15,7 +15,7 @@ backend/tests/
 └── README.md          # Hướng dẫn chi tiết
 ```
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Bước 1: Setup Virtual Environment (venv)
 
@@ -101,68 +101,68 @@ python -m tests.test_manual
 
 ---
 
-## 📊 Test Coverage
+## Test Coverage
 
-### ✅ Test Models (test_models.py)
+### Test Models (test_models.py)
 
-**Player Model:**
-- ✅ Player creation với đầy đủ attributes
-- ✅ Add score (positive, negative)
-- ✅ Set drawer status
-- ✅ Convert to dictionary
+Player Model:
+- [PASS] Player creation với đầy đủ attributes
+- [PASS] Add score (positive, negative)
+- [PASS] Set drawer status
+- [PASS] Convert to dictionary
 
-**Room Model:**
-- ✅ Room creation
-- ✅ Add players (single, multiple, duplicates)
-- ✅ Remove players (existing, non-existing)
-- ✅ Get player count
-- ✅ Check can start game
-- ✅ Convert to dictionary
+Room Model:
+- [PASS] Room creation
+- [PASS] Add players (single, multiple, duplicates)
+- [PASS] Remove players (existing, non-existing)
+- [PASS] Get player count
+- [PASS] Check can start game
+- [PASS] Convert to dictionary
 
-### ✅ Test Storage (test_storage.py)
+### Test Storage (test_storage.py)
 
-**Room Operations:**
-- ✅ Add và get room
-- ✅ Remove room
-- ✅ Get all rooms
-- ✅ Handle non-existent rooms
+Room Operations:
+- [PASS] Add và get room
+- [PASS] Remove room
+- [PASS] Get all rooms
+- [PASS] Handle non-existent rooms
 
-**Player Operations:**
-- ✅ Add và get player
-- ✅ Remove player
-- ✅ Get all players
-- ✅ Get players in specific room
-- ✅ Storage isolation (rooms vs players)
+Player Operations:
+- [PASS] Add và get player
+- [PASS] Remove player
+- [PASS] Get all players
+- [PASS] Get players in specific room
+- [PASS] Storage isolation (rooms vs players)
 
-### ✅ Test Handlers (test_handlers.py)
+### Test Handlers (test_handlers.py)
 
-**Room Handler:**
-- ✅ Create room (unique 6-char IDs)
-- ✅ Add player to room
-- ✅ Add multiple players
-- ✅ Handle invalid room
-- ✅ Remove player from room
-- ✅ Room cleanup when empty
-- ✅ Get room players
+Room Handler:
+- [PASS] Create room (unique 6-char IDs)
+- [PASS] Add player to room
+- [PASS] Add multiple players
+- [PASS] Handle invalid room
+- [PASS] Remove player from room
+- [PASS] Room cleanup when empty
+- [PASS] Get room players
 
-**Drawing Handler:**
-- ✅ Broadcast drawing start
-- ✅ Broadcast drawing move
-- ✅ Broadcast drawing end
-- ✅ Broadcast color change
-- ✅ Broadcast brush size change
-- ✅ Broadcast canvas clear
-- ✅ Handle invalid player
+Drawing Handler:
+- [PASS] Broadcast drawing start
+- [PASS] Broadcast drawing move
+- [PASS] Broadcast drawing end
+- [PASS] Broadcast color change
+- [PASS] Broadcast brush size change
+- [PASS] Broadcast canvas clear
+- [PASS] Handle invalid player
 
-**Chat Handler:**
-- ✅ Process message
-- ✅ Message sanitization (whitespace)
-- ✅ Empty message handling
-- ✅ Invalid player handling
+Chat Handler:
+- [PASS] Process message
+- [PASS] Message sanitization (whitespace)
+- [PASS] Empty message handling
+- [PASS] Invalid player handling
 
 ---
 
-## 📝 Chạy Tests Cụ thể
+## Chạy Tests Cụ thể
 
 ```bash
 # Chỉ test models
@@ -192,7 +192,7 @@ pytest -n auto
 
 ---
 
-## 🎯 Kết quả Mong đợi
+## Kết quả Mong đợi
 
 Khi chạy `pytest`, bạn sẽ thấy:
 
@@ -210,7 +210,7 @@ tests/test_handlers.py .......................                 [100%]
 
 ---
 
-## 🔍 Manual Testing Output
+## Manual Testing Output
 
 Khi chạy `python -m tests.test_manual`:
 
@@ -222,45 +222,45 @@ Make sure backend is running on http://localhost:5000
 ==================================================
 
 --- Test 1: Connection ---
-✅ PASS: Connected - {'message': 'Connected to server'}
+PASS: Connected - {'message': 'Connected to server'}
 
 --- Test 2: Create Room ---
-✅ PASS: Room created - Room ID: ABC123
+PASS: Room created - Room ID: ABC123
 
 --- Test 3: Join Room ---
-✅ PASS: Room joined - Players: 1
+PASS: Room joined - Players: 1
 
 --- Test 4: Drawing Events ---
-✅ PASS: Canvas update - start
-✅ PASS: Canvas update - move
-✅ PASS: Canvas update - end
+PASS: Canvas update - start
+PASS: Canvas update - move
+PASS: Canvas update - end
 
 --- Test 5: Drawing Tools ---
-✅ PASS: Canvas update - color
-✅ PASS: Canvas update - brush_size
+PASS: Canvas update - color
+PASS: Canvas update - brush_size
 
 --- Test 6: Canvas Clear ---
-✅ PASS: Canvas update - clear
+PASS: Canvas update - clear
 
 --- Test 7: Chat Messages ---
-✅ PASS: Chat message - Test Player: Hello!
+PASS: Chat message - Test Player: Hello!
 
 --- Test 8: Leave Room ---
-✅ PASS: Player left - Test Player
+PASS: Player left - Test Player
 
 ==================================================
 TEST SUMMARY
 ==================================================
 Total Tests: 15
-✅ Passed: 15
-❌ Failed: 0
+Passed: 15
+Failed: 0
 Success Rate: 100.0%
 ==================================================
 ```
 
 ---
 
-## 🐛 Troubleshooting
+## Troubleshooting
 
 ### Lỗi: venv chưa được activate
 
@@ -325,7 +325,7 @@ pytest --cov=src --cov-report=html
 
 ---
 
-## 📈 Tiếp theo
+## Tiếp theo
 
 ### Thêm Tests Mới
 
@@ -382,7 +382,7 @@ locust -f locustfile.py
 
 ---
 
-## ✅ Testing Checklist
+## Testing Checklist
 
 ### Before Commit
 - [ ] Activate venv: `venv\Scripts\Activate.ps1`
@@ -404,7 +404,7 @@ deactivate
 
 ---
 
-## 📚 Tài liệu Tham khảo
+## Tài liệu Tham khảo
 
 - [Pytest Documentation](https://docs.pytest.org/)
 - [Coverage.py](https://coverage.readthedocs.io/)
@@ -412,7 +412,7 @@ deactivate
 
 ---
 
-## 🎓 Best Practices
+## Best Practices
 
 1. **Always use venv** - Môi trường isolated, tránh xung đột
 2. **Write tests first** (TDD) khi thêm features mới
@@ -426,12 +426,12 @@ deactivate
 
 ---
 
-**Tổng kết:**
-- ✅ 50+ unit tests
-- ✅ Coverage tools setup
-- ✅ Manual testing script
-- ✅ Documentation đầy đủ
-- ✅ Ready for CI/CD integration
+Tổng kết:
+- [DONE] 50+ unit tests
+- [DONE] Coverage tools setup
+- [DONE] Manual testing script
+- [DONE] Documentation đầy đủ
+- [DONE] Ready for CI/CD integration
 
-**Happy Testing!** 🎉
+Happy Testing!
 
