@@ -121,3 +121,17 @@ def get_room_data(room_id):
     """
     return data_store.get_room(room_id)
 
+def is_room_host(room_id: str, player_id: str) -> bool:
+    """Kiểm tra player_id có phải host của room không."""
+    room = data_store.get_room(room_id)
+    if not room:
+        return False
+    return room.is_host(player_id)
+
+
+def room_has_player(room_id: str, player_id: str) -> bool:
+    """Kiểm tra player có thuộc room không."""
+    room = data_store.get_room(room_id)
+    if not room:
+        return False
+    return room.has_player(player_id)
