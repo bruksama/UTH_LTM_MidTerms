@@ -33,30 +33,10 @@ def process_message(player_id: str, message: str):
 
     # Chat bình thường
     message_data = {
-        "player_id": player.id,
-        "player_name": player.name,
-        "message": text,
-        "is_system": False,
+        'player_name': player.name,
+        'message': sanitized_message,
+        'is_guess': False  # TODO: Set to True when game logic checks guess
     }
+    
+    return room_id, message_data, is_correct_guess
 
-    # Lấy game của phòng
-    game = data_store.get_game(room_id)
-    if not game:
-        return room_id, message_data, False
-
-    # Debug đoán từ
-    print(
-        "[GUESS DEBUG]",
-        "room:", room_id,
-        "| player:", player.name,
-        "| guess:", repr(text),
-        "| current_word:", repr(game.current_word),
-    )
-
-    # Check đoán đúng
-    is_correct = game.check_guess(text)
-
-    if is_correct:
-        game_handler.calculate_scores(room_id, player_id)
-
-    return room_id, message_data, is_correct

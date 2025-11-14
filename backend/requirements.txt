@@ -4,3 +4,8 @@ flask-cors==4.0.0
 python-dotenv==1.0.0
 simple-websocket==1.1.0
 
+# Testing dependencies
+pytest==7.4.3
+pytest-cov==4.1.0
+python-socketio[client]==5.11.0
+

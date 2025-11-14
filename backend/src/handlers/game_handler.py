@@ -99,12 +99,12 @@ def calculate_scores(room_id, guesser_id):
 
 
 def update_timer(room_id, seconds):
-    """Update countdown timer"""
-    game = data_store.get_game(room_id)
-    if not game:
-        return None
+    """
+    Update the round timer
+    Args:
+        room_id: Room identifier
+        seconds: Remaining seconds
+    """
+    # TODO: Implement timer update logic
+    pass
 
-    game.timer = seconds
-    data_store.add_game(game)
-
-    return seconds
