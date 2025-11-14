@@ -12,12 +12,13 @@ class TestDataStore:
     
     def test_add_and_get_room(self):
         """Test adding and retrieving a room"""
-        room = Room('TEST01')
+        room = Room('TEST01', 'host_123')
         data_store.add_room(room)
         
         retrieved = data_store.get_room('TEST01')
         assert retrieved is not None
         assert retrieved.id == 'TEST01'
+        assert retrieved.host_id == 'host_123'
         assert retrieved == room
     
     def test_get_nonexistent_room(self):
@@ -27,7 +28,7 @@ class TestDataStore:
     
     def test_remove_room(self):
         """Test removing a room"""
-        room = Room('TEST01')
+        room = Room('TEST01', 'host_123')
         data_store.add_room(room)
         
         # Verify room exists
@@ -46,9 +47,9 @@ class TestDataStore:
     
     def test_get_all_rooms(self):
         """Test getting all rooms"""
-        room1 = Room('ROOM01')
-        room2 = Room('ROOM02')
-        room3 = Room('ROOM03')
+        room1 = Room('ROOM01', 'host_1')
+        room2 = Room('ROOM02', 'host_2')
+        room3 = Room('ROOM03', 'host_3')
         
         data_store.add_room(room1)
         data_store.add_room(room2)
@@ -135,7 +136,7 @@ class TestDataStore:
     
     def test_storage_isolation(self):
         """Test that rooms and players storage are separate"""
-        room = Room('ROOM01')
+        room = Room('ROOM01', 'host_123')
         player = Player('player_1', 'Test', 'ROOM01')
         
         data_store.add_room(room)

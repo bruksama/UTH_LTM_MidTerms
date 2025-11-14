@@ -55,13 +55,13 @@ def log_success(test_name, details=''):
     """Log successful test"""
     test_results['passed'] += 1
     test_results['total'] += 1
-    print(f"✅ PASS: {test_name} - {details}")
+    print(f"PASS: {test_name} - {details}")
 
 def log_error(test_name, details=''):
     """Log failed test"""
     test_results['failed'] += 1
     test_results['total'] += 1
-    print(f"❌ FAIL: {test_name} - {details}")
+    print(f"FAIL: {test_name} - {details}")
 
 def test_connection():
     """Test 1: Connection"""
@@ -141,7 +141,7 @@ def test_chat():
         'Hello!',
         'Test message 1',
         'Test message 2',
-        'Emoji test 🎨'
+        'Test message 3'
     ]
     for msg in messages:
         sio.emit('send_message', {'message': msg})
@@ -174,8 +174,8 @@ def print_summary():
     print('TEST SUMMARY')
     print('='*50)
     print(f"Total Tests: {test_results['total']}")
-    print(f"✅ Passed: {test_results['passed']}")
-    print(f"❌ Failed: {test_results['failed']}")
+    print(f"Passed: {test_results['passed']}")
+    print(f"Failed: {test_results['failed']}")
     
     if test_results['total'] > 0:
         success_rate = (test_results['passed'] / test_results['total']) * 100
@@ -209,7 +209,7 @@ def main():
     except KeyboardInterrupt:
         print('\n\nTest interrupted by user')
     except Exception as e:
-        print(f'\n❌ Unexpected error: {e}')
+        print(f'\nUnexpected error: {e}')
     finally:
         disconnect()
         print_summary()
