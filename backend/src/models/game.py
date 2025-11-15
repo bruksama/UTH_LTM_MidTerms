@@ -4,7 +4,11 @@ TODO: Implement Game class for managing game state and rounds
 (Thành viên 2)
 """
 import random
-
+from config.constants import (
+    SCORE_CORRECT_GUESS,
+    SCORE_DRAWER_WHEN_GUESSED,
+    ROUND_TIMER_SECONDS,
+)
 class Game:
     """
     Manages game state and rounds
@@ -58,7 +62,7 @@ class Game:
         self.current_word = self.select_word(word_list)
 
         # set timer
-        self.timer = 90  # default
+        self.timer = ROUND_TIMER_SECONDS  # default
 
         self.state = "playing"
         return {
@@ -98,10 +102,10 @@ class Game:
         - Guesser gets points
         - Drawer gets points for each correct guess
         """
-        GUESSER_POINTS = 10
-        DRAWER_POINTS = 5
+        if not guesser and not drawer:
+            return
 
         if guesser:
-            guesser.add_score(GUESSER_POINTS)
+            guesser.add_score(SCORE_CORRECT_GUESS)
         if drawer:
-            drawer.add_score(DRAWER_POINTS)
+            drawer.add_score(SCORE_DRAWER_WHEN_GUESSED)

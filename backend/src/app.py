@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 # Import handlers
 from handlers import room_handler, drawing_handler, chat_handler, game_handler
 from storage import data_store
-
+from config.constants import ROUND_TIMER_SECONDS
 # Load environment variables
 load_dotenv()
 
@@ -27,7 +27,7 @@ socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
 
 # ================== GAME TIMER & ROUND HELPERS ==================
 ACTIVE_TIMERS = {}
-ROUND_DURATION = 90  # giây / round
+ROUND_DURATION = ROUND_TIMER_SECONDS  # giây / round
 
 def _broadcast_round_started(room_id, round_info):
     """
@@ -343,7 +343,12 @@ def handle_kick_player(data):
     if not room_id or not target_id:
         emit("error", {"message": "room_id và target_id là bắt buộc"})
         return
-
+    if ACTIVE_TIMERS.get(room_id):
+        emit(
+            "error",
+            {"message": "Không thể kick người chơi khi vòng chơi đang diễn ra."},
+        )
+        return
     # 1. Chỉ host mới có quyền kick
     if not room_handler.is_room_host(room_id, requester_id):
         emit("error", {"message": "Chỉ chủ phòng mới có quyền kick người chơi"})
