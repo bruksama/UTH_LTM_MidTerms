@@ -14,14 +14,16 @@ from storage import data_store
 from models.game import Game
 from utils.word_list import load_word_list  # ← DÙNG UTIL ĐÃ VIẾT
 
+from config.constants import MIN_PLAYERS_TO_START
+
 def start_game(room_id):
-    """Start a new game in the room"""
     room = data_store.get_room(room_id)
     if not room:
         return False, "Room not found"
 
-    if len(room.players) < 2:
-        return False, "Not enough players"
+    if len(room.players) < MIN_PLAYERS_TO_START:
+        return False, f"Không đủ người chơi (tối thiểu {MIN_PLAYERS_TO_START})"
+
 
     game = Game(room_id)
     game.start_game(room.players)
@@ -92,9 +94,10 @@ def calculate_scores(room_id, guesser_id):
     # Hàm này sẽ tự cộng điểm cho drawer & guesser
     game.calculate_scores(drawer, guesser)
 
-    # Không cần data_store.update_player, vì Player object đang được
-    # giữ reference trong room / data_store rồi
-    data_store.add_game(game)   # nếu muốn lưu lại state game
+    if drawer:
+        data_store.update_player(drawer)
+    if guesser:
+        data_store.update_player(guesser)
 
     return True
 

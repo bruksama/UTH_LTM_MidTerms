@@ -80,6 +80,7 @@ class RoomUI {
       return;
     }
 
+<<<<<<<<< Temporary merge branch 1
   handleRoomCreated(data) {
     // Lưu room hiện tại & đánh dấu host
     this.currentRoomId = data.room_id;
@@ -92,11 +93,27 @@ class RoomUI {
     // Hiện mã phòng ở màn tạo phòng (block phía trên)
     const roomIdDisplay = document.getElementById("room-id-display");
     const roomIdText = document.getElementById("room-id-text");
+=========
+    this.socket.emit("join_room", {
+      room_id: roomId,
+      player_name: playerName,
+    });
+  }
+
+  handleRoomCreated(data) {
+    this.currentRoomId = data.room_id;
+    localStorage.setItem("roomId", data.room_id);
+    window.currentRoomId = data.room_id;
+    const roomIdDisplay = document.getElementById("room-id-display");
+    const roomIdText = document.getElementById("room-id-text");
+
+>>>>>>>>> Temporary merge branch 2
     if (roomIdDisplay && roomIdText) {
       roomIdText.textContent = data.room_id;
       roomIdDisplay.classList.remove("hidden");
     }
 
+<<<<<<<<< Temporary merge branch 1
     // Hiển thị mã phòng cố định bên trái (panel game)
     const fixedRoomId = document.getElementById("fixed-room-id");
     if (fixedRoomId) {
@@ -161,5 +178,38 @@ class RoomUI {
     if (window.gameUI && Array.isArray(data.players)) {
       window.gameUI.updatePlayersList(data.players);
     }
+=========
+    // Auto join the created room
+    const playerName = document
+      .getElementById("player-name-input")
+      .value.trim();
+    this.socket.emit("join_room", {
+      room_id: data.room_id,
+      player_name: playerName,
+    });
+  }
+
+  handleRoomJoined(data) {
+    this.currentRoomId = data.room_id;
+
+    if (data.room_id) {
+      window.currentRoomId = data.room_id;
+    }
+
+    const roomSelection = document.getElementById("room-selection");
+    const gameScreen = document.getElementById("game-screen");
+
+    if (roomSelection && gameScreen) {
+      roomSelection.classList.remove("active");
+      roomSelection.classList.add("hidden");
+
+      gameScreen.classList.add("active");
+      gameScreen.classList.remove("hidden");
+    }
+
+    if (window.gameUI && Array.isArray(data.players)) {
+      window.gameUI.updatePlayersList(data.players);
+    }
+>>>>>>>>> Temporary merge branch 2
   }
 }

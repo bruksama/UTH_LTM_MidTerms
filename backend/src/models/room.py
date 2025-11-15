@@ -3,7 +3,10 @@ Room Model
 Manages game rooms and their players
 """
 from datetime import datetime
-
+from config.constants import (
+    MAX_PLAYERS_PER_ROOM,
+    MIN_PLAYERS_TO_START,
+)
 
 class Room:
     """
@@ -23,7 +26,7 @@ class Room:
         self.game_state = 'waiting'         # waiting, playing, ended
         self.created_at = datetime.now()
 
-        self.max_players = 8                # NEW: giới hạn tối đa
+        self.max_players = MAX_PLAYERS_PER_ROOM               # NEW: giới hạn tối đa
     
     def add_player(self, player_id):
         """Add a player to the room."""

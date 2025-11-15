@@ -5,11 +5,25 @@
 class DrawerCanvas {
   constructor(canvasId, socketClient) {
     this.canvas = document.getElementById(canvasId);
+    if (!this.canvas) {
+      console.error("[DrawerCanvas] canvas not found:", canvasId);
+      return;
+    }
+
     this.ctx = this.canvas.getContext("2d");
     this.socket = socketClient;
+<<<<<<<<< Temporary merge branch 1
     const rect = this.canvas.getBoundingClientRect();
     this.canvas.width = rect.width;
     this.canvas.height = rect.height;
+=========
+
+    // Khớp kích thước hiển thị
+    const rect = this.canvas.getBoundingClientRect();
+    this.canvas.width = rect.width || 800;
+    this.canvas.height = rect.height || 600;
+
+>>>>>>>>> Temporary merge branch 2
     this.isDrawing = false;
     this.enabled = false;
     this.currentColor = "#000000";
@@ -17,8 +31,7 @@ class DrawerCanvas {
     this.lastX = 0;
     this.lastY = 0;
 
-    // NEW: emitter đã được throttle / debounce
-    const fallbackThrottle = (fn, ms) => fn; // phòng khi helpers chưa load
+    const fallbackThrottle = (fn, ms) => fn;
     const fallbackDebounce = (fn, ms) => fn;
 
     const _throttle =
@@ -26,12 +39,10 @@ class DrawerCanvas {
     const _debounce =
       typeof debounce === "function" ? debounce : fallbackDebounce;
 
-    // Throttle ~ 16ms (60fps).
     this.emitMoveThrottled = _throttle((payload) => {
       this.socket?.emit("drawing_move", payload);
     }, 16);
 
-    // Debounce khi đổi màu & cỡ bút để tránh spam khi kéo slider/nhấp liên tục
     this.emitColorDebounced = _debounce((payload) => {
       this.socket?.emit("change_color", payload);
     }, 120);
@@ -49,15 +60,22 @@ class DrawerCanvas {
     this.canvas.addEventListener("mousedown", (e) => this.startDrawing(e));
     this.canvas.addEventListener("mousemove", (e) => this.draw(e));
     this.canvas.addEventListener("mouseup", () => this.stopDrawing());
-    this.canvas.addEventListener("mouseout", () => this.stopDrawing());
+    this.canvas.addEventListener("mouseleave", () => this.stopDrawing());
 
+<<<<<<<<< Temporary merge branch 1
     // Touch events for mobile
+=========
+    // Touch events
+>>>>>>>>> Temporary merge branch 2
     this.canvas.addEventListener(
       "touchstart",
       (e) => {
         e.preventDefault();
         const touch = e.touches[0] || e.changedTouches[0];
+<<<<<<<<< Temporary merge branch 1
         // Giả 1 "event-like object" có clientX/Y cho getMousePos dùng
+=========
+>>>>>>>>> Temporary merge branch 2
         this.startDrawing({
           clientX: touch.clientX,
           clientY: touch.clientY,
@@ -90,7 +108,6 @@ class DrawerCanvas {
   }
 
   setupDrawingTools() {
-    // Color picker
     document.querySelectorAll(".color-btn").forEach((btn) => {
       btn.addEventListener("click", (e) => {
         document
@@ -101,20 +118,16 @@ class DrawerCanvas {
       });
     });
 
-    // Brush size slider
     const brushSlider = document.getElementById("brush-size-slider");
     const brushDisplay = document.getElementById("brush-size-display");
     if (brushSlider) {
       brushSlider.addEventListener("input", (e) => {
-        const size = parseInt(e.target.value);
+        const size = parseInt(e.target.value, 10) || 1;
         this.setBrushSize(size);
-        if (brushDisplay) {
-          brushDisplay.textContent = size;
-        }
+        if (brushDisplay) brushDisplay.textContent = size;
       });
     }
 
-    // Clear canvas button
     const clearBtn = document.getElementById("clear-canvas-btn");
     if (clearBtn) {
       clearBtn.addEventListener("click", () => this.clearCanvas());
@@ -123,10 +136,15 @@ class DrawerCanvas {
 
   getMousePos(e) {
     const rect = this.canvas.getBoundingClientRect();
+<<<<<<<<< Temporary merge branch 1
 
     // scale giữa "pixel vẽ" của canvas và "pixel hiển thị" trên màn hình
     const scaleX = this.canvas.width / rect.width || 1;
     const scaleY = this.canvas.height / rect.height || 1;
+=========
+    const scaleX = (this.canvas.width || rect.width) / (rect.width || 1);
+    const scaleY = (this.canvas.height || rect.height) / (rect.height || 1);
+>>>>>>>>> Temporary merge branch 2
 
     return {
       x: (e.clientX - rect.left) * scaleX,
@@ -135,9 +153,11 @@ class DrawerCanvas {
   }
 
   startDrawing(e) {
+    console.log("[DrawerCanvas] mousedown, enabled =", this.enabled);
     if (!this.enabled) return;
-    this.isDrawing = true;
+
     const pos = this.getMousePos(e);
+    this.isDrawing = true;
     this.lastX = pos.x;
     this.lastY = pos.y;
 
@@ -173,12 +193,13 @@ class DrawerCanvas {
   }
 
   setColor(color) {
-    this.currentColor = color;
-    this.emitColorDebounced({ color });
+    this.currentColor = color || "#000000";
+    this.emitColorDebounced({ color: this.currentColor });
   }
+
   setBrushSize(size) {
-    this.currentBrushSize = size;
-    this.emitBrushDebounced({ size });
+    this.currentBrushSize = size || 1;
+    this.emitBrushDebounced({ size: this.currentBrushSize });
   }
 
   clearCanvas() {
@@ -189,16 +210,20 @@ class DrawerCanvas {
   enable() {
     this.enabled = true;
     this.canvas.style.cursor = "crosshair";
+    this.canvas.style.pointerEvents = "auto"; // 🔥 đảm bảo bắt được chuột
     const tools = document.getElementById("drawing-tools");
     if (tools) tools.classList.remove("hidden");
+    console.log("[DrawerCanvas] ENABLE()");
   }
 
   disable() {
     this.enabled = false;
     this.isDrawing = false;
     this.canvas.style.cursor = "default";
+    this.canvas.style.pointerEvents = "none"; // 🔥 chặn click khi không phải drawer
     const tools = document.getElementById("drawing-tools");
     if (tools) tools.classList.add("hidden");
+    console.log("[DrawerCanvas] DISABLE()");
   }
 }
 window.DrawerCanvas = DrawerCanvas;
