@@ -88,6 +88,15 @@ socketClient.on("room_joined", (data) => {
   if (typeof data.is_host === "boolean") {
     window.isRoomHost = data.is_host;
   }
+  // Hiển thị mã phòng ở UI chat / header (nếu có element này)
+  const roomIdDisplay = document.getElementById("room-id-text");
+  const roomIdBlock = document.getElementById("room-id-display");
+  if (roomIdDisplay && data.room_id) {
+    roomIdDisplay.textContent = data.room_id;
+  }
+  if (roomIdBlock) {
+    roomIdBlock.classList.remove("hidden");
+  }
 
   // Initialize scoreboard with current players
   if (data.players && Array.isArray(data.players) && window.scoreboard) {
@@ -113,21 +122,26 @@ socketClient.on("room_joined", (data) => {
 
 // Game state events
 socketClient.on("round_started", (data) => {
-  console.log("Round started - Drawer:", data.drawer_id);
+  console.log("Round started - Drawer:", data.drawer_id, data);
+  const myId = socketClient.socket?.id;
+  const isDrawer = Boolean(data.is_drawer) || (myId && data.drawer_id === myId);
 
-  // Enable drawer canvas if current player is drawer
-  if (window.drawerCanvas && data.is_drawer) {
-    window.drawerCanvas.enable();
-    console.log("Drawer canvas enabled");
-  } else if (window.drawerCanvas) {
-    window.drawerCanvas.disable();
+  // Bật / tắt canvas vẽ
+  if (window.drawerCanvas) {
+    if (isDrawer) {
+      console.log("[DrawerCanvas] ENABLE drawing");
+      window.drawerCanvas.enable();
+    } else {
+      console.log("[DrawerCanvas] DISABLE drawing");
+      window.drawerCanvas.disable();
+    }
   }
 
+  // Update scoreboard
   if (window.scoreboard && data.drawer_id) {
     window.scoreboard.setDrawer(data.drawer_id);
   }
 
-  // Thông báo + system line
   notifications.info("Vòng mới bắt đầu!");
   if (window.chat) window.chat.displaySystemMessage("Vòng mới bắt đầu!");
 });
