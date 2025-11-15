@@ -106,6 +106,101 @@ def _start_round_timer(room_id, duration=ROUND_DURATION):
       ACTIVE_TIMERS.pop(rid, None)
 
   socketio.start_background_task(_timer_task, room_id, duration)
+
+def _handle_host_left(host_sid):
+    """
+    Khi chủ phòng rời (disconnect/leave), đóng phòng và đẩy tất cả player ra ngoài.
+    """
+    player = data_store.get_player(host_sid)
+    if not player:
+        return
+
+    room_id = player.room_id
+    if not room_id:
+        return
+
+    room = data_store.get_room(room_id)
+    if not room:
+        return
+
+    # Nếu có hàm is_host trong Room thì check luôn cho chắc
+    if hasattr(room, "is_host") and not room.is_host(host_sid):
+        return
+
+    # Lấy toàn bộ players trong phòng
+    players = data_store.get_players_in_room(room_id) or []
+
+    # Thông báo cho cả phòng là phòng đã đóng
+    socketio.emit(
+        "room_closed",
+        {
+            "room_id": room_id,
+            "reason": "host_left",
+        },
+        room=room_id,
+    )
+
+    # Cho từng socket rời room + xóa player
+    for p in players:
+        try:
+            leave_room(room_id, sid=p.id)
+        except Exception as ex:
+            print(f"[room_closed] leave_room error for {p.id}: {ex}")
+        data_store.remove_player(p.id)
+
+    # Xóa room (game nếu mày có API remove_game thì có thể thêm sau)
+    data_store.remove_room(room_id)
+
+    print(f"[room_closed] Room {room_id} closed because host {host_sid} left")
+
+def _close_room_for_host(host_sid):
+    """
+    Host rời phòng → đóng hẳn phòng, kick toàn bộ player còn lại.
+    Gửi event 'room_closed' cho tất cả client trong phòng.
+    """
+    player = data_store.get_player(host_sid)
+    if not player:
+        return
+
+    room_id = player.room_id
+    if not room_id:
+        # chỉ xoá player nếu không còn gắn với room
+        data_store.remove_player(host_sid)
+        return
+
+    room = data_store.get_room(room_id)
+    if not room or room.host_id != host_sid:
+        # không phải host thì không đóng phòng ở đây
+        return
+
+    # dừng timer nếu có
+    ACTIVE_TIMERS.pop(room_id, None)
+
+    # lấy danh sách player trong phòng (trước khi xoá)
+    players = room_handler.get_room_players(room_id)  # list dict {id, name, ...}
+
+    # thông báo cho toàn bộ phòng (mọi người chuyển về lobby)
+    socketio.emit(
+        "room_closed",
+        {"room_id": room_id, "reason": "host_left"},
+        room=room_id,
+    )
+
+    # cho từng socket rời room + xoá player khỏi storage
+    for p in players:
+        pid = p.get("id")
+        if not pid:
+            continue
+        try:
+            leave_room(room_id, sid=pid)
+        except Exception:
+            pass
+        data_store.remove_player(pid)
+
+    # cuối cùng xoá room
+    data_store.remove_room(room_id)
+
+
 # ================== END HELPERS ==================
 
 @app.route('/')
@@ -123,10 +218,23 @@ def handle_connect():
 def handle_disconnect():
     """Handle client disconnection"""
     print(f"Client disconnected: {request.sid}")
-    
-    # Remove player from room using handler
+
+    # kiểm tra player & room
+    player = data_store.get_player(request.sid)
+    if not player:
+        return
+
+    room_id = player.room_id
+    room = data_store.get_room(room_id) if room_id else None
+
+    # Nếu là host → đóng phòng luôn
+    if room and room.host_id == request.sid:
+        _close_room_for_host(request.sid)
+        return
+
+    # còn lại: player thường, logic cũ
     room_id, player_name = room_handler.remove_player_from_room(request.sid)
-    
+
     if room_id:
         leave_room(room_id)
 
@@ -139,10 +247,11 @@ def handle_disconnect():
             {
                 'player_id': request.sid,
                 'player_name': player_name,
-                'players': players_after,   # 🔥 thêm list player
+                'players': players_after,
             },
             room=room_id,
         )
+
 
 
 @socketio.on('create_room')
@@ -190,9 +299,21 @@ def handle_join_room(data):
 
 @socketio.on('leave_room')
 def handle_leave_room(data=None):
-    """Handle player leaving a room"""
+    """Handle player leaving a room (user click leave)"""
+    player = data_store.get_player(request.sid)
+    if not player:
+        return
+    room_id = player.room_id
+    room = data_store.get_room(player.room_id) if player.room_id else None
+
+       # Nếu là host → đóng phòng
+    if room and room.host_id == request.sid:
+        _close_room_for_host(request.sid)
+        return
+
+    # 🔹 Player thường → logic cũ của mày
     room_id, player_name = room_handler.remove_player_from_room(request.sid)
-    
+
     if room_id:
         leave_room(room_id)
 
@@ -203,10 +324,11 @@ def handle_leave_room(data=None):
             {
                 'player_id': request.sid,
                 'player_name': player_name,
-                'players': players_after,   # 🔥 FE dùng để update list
+                'players': players_after,
             },
             room=room_id,
         )
+
 
 @socketio.on('kick_player')
 def handle_kick_player(data):
@@ -405,23 +527,26 @@ def handle_send_message(data):
     room_id, message_data, is_correct_guess = chat_handler.process_message(
         request.sid, message
     )
-    
+
     if room_id and message_data:
-        socketio.emit('chat_message', message_data, room=room_id)
-        # sau này có thể handle is_correct_guess ở đây
-    # Nếu đoán đúng → đã được cộng điểm trong game_handler rồi
+        if is_correct_guess:
+            socketio.emit('chat_message', message_data, room=request.sid)
+        else:
+            socketio.emit('chat_message', message_data, room=room_id)
+
+    
     if room_id and is_correct_guess:
         # Lấy lại danh sách player sau khi đã update score
         players = room_handler.get_room_players(room_id)
 
-        # Lấy từ khóa hiện tại để thông báo
+        # Lấy từ khóa hiện tại để thông báo (nếu cần)
         game = data_store.get_game(room_id)
         current_word = game.current_word if game else None
 
-        # Cập nhật bảng điểm cho tất cả client
+        # Cập nhật bảng điểm cho TẤT CẢ (mọi người đều thấy điểm thay đổi)
         socketio.emit('scores_updated', {'players': players}, room=room_id)
 
-        # Thông báo đoán đúng (FE đang lắng nghe 'correct_guess')
+        # 🔥 Thông báo đoán đúng CHỈ CHO CHÍNH NGƯỜI ĐÓ
         socketio.emit(
             'correct_guess',
             {
@@ -429,8 +554,9 @@ def handle_send_message(data):
                 'player_name': message_data.get('player_name'),
                 'word': current_word,
             },
-            room=room_id,
+            room=request.sid,   # khác chỗ này: trước là room=room_id
         )
+
 
 if __name__ == '__main__':
     port = int(os.getenv('PORT', 5000))

@@ -13,14 +13,15 @@ const scoreboard = new Scoreboard();
 const chat = new Chat(socketClient);
 const notifications = new Notifications();
 
-const roomId = localStorage.getItem("roomId") || "ROOM001";
-const playerName =
-  localStorage.getItem("playerName") ||
-  "Player_" + Math.floor(Math.random() * 1000);
-localStorage.setItem("roomId", roomId);
-localStorage.setItem("playerName", playerName);
-window.currentRoomId = null; // room hiện tại
+window.currentRoomId = null;
 window.isRoomHost = false;
+
+// Nếu muốn vẫn nhớ tên player, dùng đoạn này:
+const savedName = localStorage.getItem("playerName");
+const playerName = savedName || "Player_" + Math.floor(Math.random() * 1000);
+if (!savedName) {
+  localStorage.setItem("playerName", playerName);
+}
 
 // Make components globally accessible
 window.roomUI = roomUI;
@@ -52,8 +53,8 @@ if (canvas) {
 socketClient.on("connected", () => {
   console.log("Connected to game server");
   notifications.info("Đã kết nối với server");
-  socketClient.emit("join_room", { room_id: roomId, player_name: playerName });
 });
+
 socketClient.on("room_created", (data) => {
   console.log("Room created:", data.room_id);
 
@@ -83,6 +84,11 @@ socketClient.on("room_joined", (data) => {
     window.currentRoomId = data.room_id;
   }
 
+  // 🔥 nhận flag host từ backend
+  if (typeof data.is_host === "boolean") {
+    window.isRoomHost = data.is_host;
+  }
+
   // Initialize scoreboard with current players
   if (data.players && Array.isArray(data.players) && window.scoreboard) {
     window.scoreboard.update(data.players);
@@ -93,13 +99,14 @@ socketClient.on("room_joined", (data) => {
       window.chat.displaySystemMessage(`Bạn đã tham gia phòng ${data.room_id}`);
   }
 
-  // Nếu mình là host (do vừa tạo phòng), đảm bảo nút Start hiện
   const startGameBtn = document.getElementById("start-game-btn");
   if (startGameBtn) {
     if (window.isRoomHost) {
       startGameBtn.classList.remove("hidden");
+      startGameBtn.disabled = false;
     } else {
       startGameBtn.classList.add("hidden");
+      startGameBtn.disabled = true;
     }
   }
 });
@@ -182,11 +189,6 @@ socketClient.on("game_started", (data) => {
     window.scoreboard.update(data.players);
   }
 
-  const startGameBtn = document.getElementById("start-game-btn");
-  if (startGameBtn && window.isRoomHost) {
-    startGameBtn.disabled = true;
-    startGameBtn.classList.add("btn-disabled"); // nếu có CSS cho disabled
-  }
   // Thông báo + system line
   notifications.info("Trận đấu bắt đầu!");
   if (window.chat) window.chat.displaySystemMessage("Trận đấu bắt đầu!");
@@ -214,19 +216,26 @@ socketClient.on("player_left", (data) => {
   if (window.chat) window.chat.displaySystemMessage(`${name} đã rời phòng`);
 });
 
-socketClient.on("player_kicked", (data) => {
+socketClient.on("kicked", (data) => {
   const name = data?.player_name || "Người chơi";
+
+  window.isRoomHost = false;
+  if (window.drawerCanvas) window.drawerCanvas.disable();
+  if (window.viewerCanvas) window.viewerCanvas.reset();
+  if (window.scoreboard) window.scoreboard.setDrawer(null);
   notifications.info(`${name} đã bị kick khỏi phòng`);
   if (window.chat) {
     window.chat.displaySystemMessage(`${name} đã bị kick khỏi phòng`);
   }
 
-  // Nếu mình là người bị kick → quay về màn chọn phòng
-  if (data.player_id === socketClient.socket.id) {
-    notifications.error("Bạn đã bị kick khỏi phòng.");
-    // Tuỳ UI của mày, ví dụ:
-    document.getElementById("game-screen")?.classList.remove("active");
-    document.getElementById("room-selection")?.classList.add("active");
+  const roomSelection = document.getElementById("room-selection");
+  const gameScreen = document.getElementById("game-screen");
+  if (roomSelection && gameScreen) {
+    gameScreen.classList.remove("active");
+    gameScreen.classList.add("hidden");
+
+    roomSelection.classList.add("active");
+    roomSelection.classList.remove("hidden");
   }
 
   // Cập nhật lại scoreboard nếu cần: có thể emit 'request_room_state' hoặc rely vào player_left
@@ -289,8 +298,87 @@ socketClient.on("disconnect", () => {
 
 socketClient.on("error", (data) => {
   console.error("Socket error:", data);
-  notifications.error(data.message || "Đã xảy ra lỗi");
+  const msg = data?.message || "Đã xảy ra lỗi";
+
+  // Nếu phòng không tồn tại (ví dụ server đã restart)
+  if (msg === "Room not found") {
+    window.currentRoomId = null;
+    window.isRoomHost = false;
+
+    // Chuyển UI về màn chọn phòng
+    const roomSelection = document.getElementById("room-selection");
+    const gameScreen = document.getElementById("game-screen");
+    if (roomSelection && gameScreen) {
+      roomSelection.classList.add("active");
+      roomSelection.classList.remove("hidden");
+
+      gameScreen.classList.remove("active");
+      gameScreen.classList.add("hidden");
+    }
+
+    // Dọn scoreboard / canvas nếu muốn
+    if (window.scoreboard) {
+      window.scoreboard.update([]);
+    }
+    if (
+      window.viewerCanvas &&
+      typeof window.viewerCanvas.reset === "function"
+    ) {
+      window.viewerCanvas.reset();
+    }
+    if (
+      window.drawerCanvas &&
+      typeof window.drawerCanvas.disable === "function"
+    ) {
+      window.drawerCanvas.disable();
+    }
+  }
+
+  notifications.error(msg);
 });
+function goToLobby() {
+  // Xoá state trên localStorage
+  localStorage.removeItem("roomId");
+  localStorage.removeItem("inGame");
+  localStorage.removeItem("isRoomHost");
+
+  // Reset biến global
+  window.currentRoomId = null;
+  window.isRoomHost = false;
+
+  const roomSelection = document.getElementById("room-selection");
+  const gameScreen = document.getElementById("game-screen");
+
+  if (roomSelection && gameScreen) {
+    // 🔥 giống UI bên phải: chỉ hiển thị card lobby
+    roomSelection.classList.add("active");
+    roomSelection.classList.remove("hidden");
+
+    gameScreen.classList.remove("active");
+    gameScreen.classList.add("hidden");
+  }
+
+  // Dọn scoreboard / canvas cho sạch
+  if (window.scoreboard && typeof window.scoreboard.update === "function") {
+    window.scoreboard.update([]);
+  }
+  if (window.viewerCanvas && typeof window.viewerCanvas.reset === "function") {
+    window.viewerCanvas.reset();
+  }
+  if (
+    window.drawerCanvas &&
+    typeof window.drawerCanvas.disable === "function"
+  ) {
+    window.drawerCanvas.disable();
+  }
+
+  // Clear form input, để client nhìn giống tab host ban đầu
+  const roomIdInput = document.getElementById("room-id-input");
+  const nameInput = document.getElementById("player-name-input");
+  if (roomIdInput) roomIdInput.value = "";
+  if (nameInput) nameInput.value = "";
+}
+
 // ================== START GAME BUTTON ==================
 const startGameBtn = document.getElementById("start-game-btn");
 if (startGameBtn) {
@@ -310,6 +398,44 @@ if (startGameBtn) {
   });
 }
 // ================== END START GAME BUTTON ==================
+
+socketClient.on("room_closed", (data) => {
+  const reason =
+    data?.reason === "host_left"
+      ? "Chủ phòng đã rời, phòng đã đóng."
+      : "Phòng đã đóng.";
+  notifications.info(reason);
+  if (window.chat) window.chat.displaySystemMessage(reason);
+
+  goToLobby();
+  // Xóa state phòng/game
+  localStorage.removeItem("roomId");
+  localStorage.removeItem("inGame");
+  localStorage.removeItem("isRoomHost");
+  window.currentRoomId = null;
+  window.isRoomHost = false;
+
+  if (window.drawerCanvas) window.drawerCanvas.disable();
+  if (window.viewerCanvas && typeof window.viewerCanvas.reset === "function") {
+    window.viewerCanvas.reset();
+  }
+  if (window.scoreboard && typeof window.scoreboard.update === "function") {
+    window.scoreboard.update([]);
+  }
+
+  notifications.info(reason);
+  if (window.chat) window.chat.displaySystemMessage(reason);
+
+  const roomSelection = document.getElementById("room-selection");
+  const gameScreen = document.getElementById("game-screen");
+  if (roomSelection && gameScreen) {
+    gameScreen.classList.add("active");
+    roomSelection.classList.remove("hidden");
+
+    gameScreen.classList.remove("active");
+    gameScreen.classList.add("hidden");
+  }
+});
 
 // Handle page unload
 window.addEventListener("beforeunload", () => {

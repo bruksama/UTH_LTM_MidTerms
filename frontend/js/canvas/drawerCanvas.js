@@ -7,6 +7,9 @@ class DrawerCanvas {
     this.canvas = document.getElementById(canvasId);
     this.ctx = this.canvas.getContext("2d");
     this.socket = socketClient;
+    const rect = this.canvas.getBoundingClientRect();
+    this.canvas.width = rect.width;
+    this.canvas.height = rect.height;
     this.isDrawing = false;
     this.enabled = false;
     this.currentColor = "#000000";
@@ -49,31 +52,41 @@ class DrawerCanvas {
     this.canvas.addEventListener("mouseout", () => this.stopDrawing());
 
     // Touch events for mobile
-    this.canvas.addEventListener("touchstart", (e) => {
-      e.preventDefault();
-      const touch = e.touches[0];
-      const mouseEvent = new MouseEvent("mousedown", {
-        clientX: touch.clientX,
-        clientY: touch.clientY,
-      });
-      this.canvas.dispatchEvent(mouseEvent);
-    });
+    this.canvas.addEventListener(
+      "touchstart",
+      (e) => {
+        e.preventDefault();
+        const touch = e.touches[0] || e.changedTouches[0];
+        // Giả 1 "event-like object" có clientX/Y cho getMousePos dùng
+        this.startDrawing({
+          clientX: touch.clientX,
+          clientY: touch.clientY,
+        });
+      },
+      { passive: false }
+    );
 
-    this.canvas.addEventListener("touchmove", (e) => {
-      e.preventDefault();
-      const touch = e.touches[0];
-      const mouseEvent = new MouseEvent("mousemove", {
-        clientX: touch.clientX,
-        clientY: touch.clientY,
-      });
-      this.canvas.dispatchEvent(mouseEvent);
-    });
+    this.canvas.addEventListener(
+      "touchmove",
+      (e) => {
+        e.preventDefault();
+        const touch = e.touches[0] || e.changedTouches[0];
+        this.draw({
+          clientX: touch.clientX,
+          clientY: touch.clientY,
+        });
+      },
+      { passive: false }
+    );
 
-    this.canvas.addEventListener("touchend", (e) => {
-      e.preventDefault();
-      const mouseEvent = new MouseEvent("mouseup", {});
-      this.canvas.dispatchEvent(mouseEvent);
-    });
+    this.canvas.addEventListener(
+      "touchend",
+      (e) => {
+        e.preventDefault();
+        this.stopDrawing();
+      },
+      { passive: false }
+    );
   }
 
   setupDrawingTools() {
@@ -110,9 +123,14 @@ class DrawerCanvas {
 
   getMousePos(e) {
     const rect = this.canvas.getBoundingClientRect();
+
+    // scale giữa "pixel vẽ" của canvas và "pixel hiển thị" trên màn hình
+    const scaleX = this.canvas.width / rect.width || 1;
+    const scaleY = this.canvas.height / rect.height || 1;
+
     return {
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top,
+      x: (e.clientX - rect.left) * scaleX,
+      y: (e.clientY - rect.top) * scaleY,
     };
   }
 
