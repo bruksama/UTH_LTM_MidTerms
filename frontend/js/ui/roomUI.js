@@ -88,8 +88,6 @@ class RoomUI {
 
   handleRoomCreated(data) {
     this.currentRoomId = data.room_id;
-    localStorage.setItem("roomId", data.room_id);
-    window.currentRoomId = data.room_id;
     const roomIdDisplay = document.getElementById("room-id-display");
     const roomIdText = document.getElementById("room-id-text");
 
@@ -111,23 +109,26 @@ class RoomUI {
   handleRoomJoined(data) {
     this.currentRoomId = data.room_id;
 
-    if (data.room_id) {
-      window.currentRoomId = data.room_id;
-    }
-
+    // Hide room selection screen
     const roomSelection = document.getElementById("room-selection");
     const gameScreen = document.getElementById("game-screen");
 
     if (roomSelection && gameScreen) {
       roomSelection.classList.remove("active");
-      roomSelection.classList.add("hidden");
-
       gameScreen.classList.add("active");
-      gameScreen.classList.remove("hidden");
     }
 
-    if (window.gameUI && Array.isArray(data.players)) {
+    // Update players list
+    if (window.gameUI) {
       window.gameUI.updatePlayersList(data.players);
     }
+  }
+
+  showError(message) {
+    alert("Lỗi: " + message);
+  }
+
+  getCurrentRoomId() {
+    return this.currentRoomId;
   }
 }

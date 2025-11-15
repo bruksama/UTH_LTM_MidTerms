@@ -12,12 +12,6 @@ class DrawerCanvas {
 
     this.ctx = this.canvas.getContext("2d");
     this.socket = socketClient;
-
-    // Khớp kích thước hiển thị
-    const rect = this.canvas.getBoundingClientRect();
-    this.canvas.width = rect.width || 800;
-    this.canvas.height = rect.height || 600;
-
     this.isDrawing = false;
     this.enabled = false;
     this.currentColor = "#000000";
@@ -56,19 +50,16 @@ class DrawerCanvas {
     this.canvas.addEventListener("mouseup", () => this.stopDrawing());
     this.canvas.addEventListener("mouseleave", () => this.stopDrawing());
 
-    // Touch events
-    this.canvas.addEventListener(
-      "touchstart",
-      (e) => {
-        e.preventDefault();
-        const touch = e.touches[0] || e.changedTouches[0];
-        this.startDrawing({
-          clientX: touch.clientX,
-          clientY: touch.clientY,
-        });
-      },
-      { passive: false }
-    );
+    // Touch events for mobile
+    this.canvas.addEventListener("touchstart", (e) => {
+      e.preventDefault();
+      const touch = e.touches[0];
+      const mouseEvent = new MouseEvent("mousedown", {
+        clientX: touch.clientX,
+        clientY: touch.clientY,
+      });
+      this.canvas.dispatchEvent(mouseEvent);
+    });
 
     this.canvas.addEventListener(
       "touchmove",
@@ -122,9 +113,6 @@ class DrawerCanvas {
 
   getMousePos(e) {
     const rect = this.canvas.getBoundingClientRect();
-    const scaleX = (this.canvas.width || rect.width) / (rect.width || 1);
-    const scaleY = (this.canvas.height || rect.height) / (rect.height || 1);
-
     return {
       x: (e.clientX - rect.left) * scaleX,
       y: (e.clientY - rect.top) * scaleY,
