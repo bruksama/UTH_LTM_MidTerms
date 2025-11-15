@@ -3,127 +3,131 @@
  * Handles room creation and joining
  */
 class RoomUI {
-    constructor(socketClient) {
-        this.socket = socketClient;
-        this.currentRoomId = null;
-        this.setupEventListeners();
+  constructor(socketClient) {
+    this.socket = socketClient;
+    this.currentRoomId = localStorage.getItem("roomId") || null;
+    this.currentRoomId = null;
+    this.setupEventListeners();
+  }
+
+  setupEventListeners() {
+    // Create room button
+    const createBtn = document.getElementById("create-room-btn");
+    if (createBtn) {
+      createBtn.addEventListener("click", () => this.createRoom());
     }
 
-    setupEventListeners() {
-        // Create room button
-        const createBtn = document.getElementById('create-room-btn');
-        if (createBtn) {
-            createBtn.addEventListener('click', () => this.createRoom());
-        }
+    // Join room button
+    const joinBtn = document.getElementById("join-room-btn");
+    if (joinBtn) {
+      joinBtn.addEventListener("click", () => this.joinRoom());
+    }
 
-        // Join room button
-        const joinBtn = document.getElementById('join-room-btn');
-        if (joinBtn) {
-            joinBtn.addEventListener('click', () => this.joinRoom());
-        }
+    // Enter key on inputs
+    const roomIdInput = document.getElementById("room-id-input");
+    const playerNameInput = document.getElementById("player-name-input");
 
-        // Enter key on inputs
-        const roomIdInput = document.getElementById('room-id-input');
-        const playerNameInput = document.getElementById('player-name-input');
-        
-        [roomIdInput, playerNameInput].forEach(input => {
-            if (input) {
-                input.addEventListener('keypress', (e) => {
-                    if (e.key === 'Enter') {
-                        this.joinRoom();
-                    }
-                });
-            }
+    [roomIdInput, playerNameInput].forEach((input) => {
+      if (input) {
+        input.addEventListener("keypress", (e) => {
+          if (e.key === "Enter") {
+            this.joinRoom();
+          }
         });
+      }
+    });
 
-        // Socket event listeners
-        this.socket.on('room_created', (data) => {
-            this.handleRoomCreated(data);
-        });
+    // Socket event listeners
+    this.socket.on("room_created", (data) => {
+      this.handleRoomCreated(data);
+    });
 
-        this.socket.on('room_joined', (data) => {
-            this.handleRoomJoined(data);
-        });
+    this.socket.on("room_joined", (data) => {
+      this.handleRoomJoined(data);
+    });
+  }
 
-        this.socket.on('error', (data) => {
-            this.showError(data.message);
-        });
+  createRoom() {
+    const playerName = document
+      .getElementById("player-name-input")
+      .value.trim();
+    if (!playerName) {
+      alert("Vui lòng nhập tên của bạn");
+      return;
     }
 
-    createRoom() {
-        const playerName = document.getElementById('player-name-input').value.trim();
-        if (!playerName) {
-            alert('Vui lòng nhập tên của bạn');
-            return;
-        }
+    this.socket.emit("create_room", {
+      player_name: playerName,
+    });
+  }
 
-        this.socket.emit('create_room', {
-            player_name: playerName
-        });
+  joinRoom() {
+    const roomId = document
+      .getElementById("room-id-input")
+      .value.trim()
+      .toUpperCase();
+    const playerName = document
+      .getElementById("player-name-input")
+      .value.trim();
+
+    if (!roomId) {
+      alert("Vui lòng nhập mã phòng");
+      return;
     }
 
-    joinRoom() {
-        const roomId = document.getElementById('room-id-input').value.trim().toUpperCase();
-        const playerName = document.getElementById('player-name-input').value.trim();
-
-        if (!roomId) {
-            alert('Vui lòng nhập mã phòng');
-            return;
-        }
-
-        if (!playerName) {
-            alert('Vui lòng nhập tên của bạn');
-            return;
-        }
-
-        this.socket.emit('join_room', {
-            room_id: roomId,
-            player_name: playerName
-        });
+    if (!playerName) {
+      alert("Vui lòng nhập tên của bạn");
+      return;
     }
 
-    handleRoomCreated(data) {
-        this.currentRoomId = data.room_id;
-        const roomIdDisplay = document.getElementById('room-id-display');
-        const roomIdText = document.getElementById('room-id-text');
-        
-        if (roomIdDisplay && roomIdText) {
-            roomIdText.textContent = data.room_id;
-            roomIdDisplay.classList.remove('hidden');
-        }
+    this.socket.emit("join_room", {
+      room_id: roomId,
+      player_name: playerName,
+    });
+  }
 
-        // Auto join the created room
-        const playerName = document.getElementById('player-name-input').value.trim();
-        this.socket.emit('join_room', {
-            room_id: data.room_id,
-            player_name: playerName
-        });
+  handleRoomCreated(data) {
+    this.currentRoomId = data.room_id;
+    localStorage.setItem("roomId", data.room_id);
+    window.currentRoomId = data.room_id;
+    const roomIdDisplay = document.getElementById("room-id-display");
+    const roomIdText = document.getElementById("room-id-text");
+
+    if (roomIdDisplay && roomIdText) {
+      roomIdText.textContent = data.room_id;
+      roomIdDisplay.classList.remove("hidden");
     }
 
-    handleRoomJoined(data) {
-        this.currentRoomId = data.room_id;
-        
-        // Hide room selection screen
-        const roomSelection = document.getElementById('room-selection');
-        const gameScreen = document.getElementById('game-screen');
-        
-        if (roomSelection && gameScreen) {
-            roomSelection.classList.remove('active');
-            gameScreen.classList.add('active');
-        }
+    // Auto join the created room
+    const playerName = document
+      .getElementById("player-name-input")
+      .value.trim();
+    this.socket.emit("join_room", {
+      room_id: data.room_id,
+      player_name: playerName,
+    });
+  }
 
-        // Update players list
-        if (window.gameUI) {
-            window.gameUI.updatePlayersList(data.players);
-        }
+  handleRoomJoined(data) {
+    this.currentRoomId = data.room_id;
+
+    if (data.room_id) {
+      window.currentRoomId = data.room_id;
     }
 
-    showError(message) {
-        alert('Lỗi: ' + message);
+    const roomSelection = document.getElementById("room-selection");
+    const gameScreen = document.getElementById("game-screen");
+
+    if (roomSelection && gameScreen) {
+      roomSelection.classList.remove("active");
+      roomSelection.classList.add("hidden");
+
+      gameScreen.classList.add("active");
+      gameScreen.classList.remove("hidden");
     }
 
-    getCurrentRoomId() {
-        return this.currentRoomId;
+    if (window.gameUI && Array.isArray(data.players)) {
+      window.gameUI.updatePlayersList(data.players);
     }
+  }
 }
-
