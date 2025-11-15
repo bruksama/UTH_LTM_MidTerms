@@ -92,6 +92,11 @@ class RoomUI {
             roomIdDisplay.classList.remove('hidden');
         }
 
+        const fixedRoomId = document.getElementById('fixed-room-id');
+    if (fixedRoomId) {
+        fixedRoomId.textContent = data.room_id;
+    }
+
         // Auto join the created room
         const playerName = document.getElementById('player-name-input').value.trim();
         this.socket.emit('join_room', {
@@ -102,7 +107,12 @@ class RoomUI {
 
     handleRoomJoined(data) {
         this.currentRoomId = data.room_id;
-        
+
+         const fixedRoomId = document.getElementById('fixed-room-id');
+    if (fixedRoomId && data.room_id) {
+        fixedRoomId.textContent = data.room_id;
+    }
+
         // Hide room selection screen
         const roomSelection = document.getElementById('room-selection');
         const gameScreen = document.getElementById('game-screen');

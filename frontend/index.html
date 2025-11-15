@@ -47,16 +47,26 @@
       <div id="game-screen" class="screen">
         <div class="game-container">
           <!-- Left Panel: Players & Scoreboard -->
-          <div class="left-panel">
-            <div class="panel-section">
-              <h3>Người Chơi</h3>
-              <div id="players-list" class="players-list"></div>
-            </div>
-            <div class="panel-section">
-              <h3>Bảng Điểm</h3>
-              <div id="scoreboard" class="scoreboard"></div>
-            </div>
-          </div>
+          <!-- Left Panel: Players & Scoreboard -->
+<div class="left-panel">
+  <!-- MÃ PHÒNG CỐ ĐỊNH -->
+  <div id="room-info-box" class="panel-section room-info">
+    <h3>Mã Phòng</h3>
+    <div id="fixed-room-id" class="room-id-tag">-----</div>
+  </div>
+
+  <div class="panel-section">
+    <h3>Người Chơi</h3>
+    <div id="players-list" class="players-list"></div>
+  </div>
+
+  <div class="panel-section">
+    <h3>Bảng Điểm</h3>
+    <div id="scoreboard" class="scoreboard"></div>
+  </div>
+</div>
+
+
 
           <!-- Center: Canvas Area -->
           <div class="center-panel">
