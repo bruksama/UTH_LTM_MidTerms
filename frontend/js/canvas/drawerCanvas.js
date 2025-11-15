@@ -12,6 +12,18 @@ class DrawerCanvas {
 
     this.ctx = this.canvas.getContext("2d");
     this.socket = socketClient;
+<<<<<<<<< Temporary merge branch 1
+    const rect = this.canvas.getBoundingClientRect();
+    this.canvas.width = rect.width;
+    this.canvas.height = rect.height;
+=========
+
+    // Khớp kích thước hiển thị
+    const rect = this.canvas.getBoundingClientRect();
+    this.canvas.width = rect.width || 800;
+    this.canvas.height = rect.height || 600;
+
+>>>>>>>>> Temporary merge branch 2
     this.isDrawing = false;
     this.enabled = false;
     this.currentColor = "#000000";
@@ -50,16 +62,27 @@ class DrawerCanvas {
     this.canvas.addEventListener("mouseup", () => this.stopDrawing());
     this.canvas.addEventListener("mouseleave", () => this.stopDrawing());
 
+<<<<<<<<< Temporary merge branch 1
     // Touch events for mobile
-    this.canvas.addEventListener("touchstart", (e) => {
-      e.preventDefault();
-      const touch = e.touches[0];
-      const mouseEvent = new MouseEvent("mousedown", {
-        clientX: touch.clientX,
-        clientY: touch.clientY,
-      });
-      this.canvas.dispatchEvent(mouseEvent);
-    });
+=========
+    // Touch events
+>>>>>>>>> Temporary merge branch 2
+    this.canvas.addEventListener(
+      "touchstart",
+      (e) => {
+        e.preventDefault();
+        const touch = e.touches[0] || e.changedTouches[0];
+<<<<<<<<< Temporary merge branch 1
+        // Giả 1 "event-like object" có clientX/Y cho getMousePos dùng
+=========
+>>>>>>>>> Temporary merge branch 2
+        this.startDrawing({
+          clientX: touch.clientX,
+          clientY: touch.clientY,
+        });
+      },
+      { passive: false }
+    );
 
     this.canvas.addEventListener(
       "touchmove",
@@ -113,6 +136,16 @@ class DrawerCanvas {
 
   getMousePos(e) {
     const rect = this.canvas.getBoundingClientRect();
+<<<<<<<<< Temporary merge branch 1
+
+    // scale giữa "pixel vẽ" của canvas và "pixel hiển thị" trên màn hình
+    const scaleX = this.canvas.width / rect.width || 1;
+    const scaleY = this.canvas.height / rect.height || 1;
+=========
+    const scaleX = (this.canvas.width || rect.width) / (rect.width || 1);
+    const scaleY = (this.canvas.height || rect.height) / (rect.height || 1);
+>>>>>>>>> Temporary merge branch 2
+
     return {
       x: (e.clientX - rect.left) * scaleX,
       y: (e.clientY - rect.top) * scaleY,

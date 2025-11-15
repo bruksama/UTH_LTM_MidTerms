@@ -84,6 +84,23 @@ socketClient.on("room_joined", (data) => {
     window.currentRoomId = data.room_id;
   }
 
+  // 🔥 nhận flag host từ backend
+  if (typeof data.is_host === "boolean") {
+    window.isRoomHost = data.is_host;
+  }
+<<<<<<<<< Temporary merge branch 1
+=========
+  // Hiển thị mã phòng ở UI chat / header (nếu có element này)
+  const roomIdDisplay = document.getElementById("room-id-text");
+  const roomIdBlock = document.getElementById("room-id-display");
+  if (roomIdDisplay && data.room_id) {
+    roomIdDisplay.textContent = data.room_id;
+  }
+  if (roomIdBlock) {
+    roomIdBlock.classList.remove("hidden");
+  }
+>>>>>>>>> Temporary merge branch 2
+
   // Initialize scoreboard with current players
   if (data.players && Array.isArray(data.players) && window.scoreboard) {
     window.scoreboard.update(data.players);
