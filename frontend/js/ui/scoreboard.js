@@ -19,13 +19,22 @@ class Scoreboard {
    * @param {Object} options
    * @param {boolean} options.animate - whether to animate score changes
    */
+  /**
+   * Update full player list (REPLACE)
+   * @param {Array} players - [{id, name, score, is_drawer}]
+   * @param {Object} options
+   * @param {boolean} options.animate - whether to animate score changes
+   */
   update(players, options = {}) {
     if (!Array.isArray(players)) return;
     const { animate = false } = options;
+
+    const newPlayers = {};
     const highlightIds = [];
 
     players.forEach((p) => {
       if (!p || !p.id) return;
+
       const existing = this.players[p.id] || {};
       const previousScore = Number.isFinite(existing.score)
         ? existing.score
@@ -33,7 +42,7 @@ class Scoreboard {
       const newScore = Number.isFinite(p.score) ? p.score : previousScore;
       const delta = newScore - previousScore;
 
-      this.players[p.id] = {
+      newPlayers[p.id] = {
         id: p.id,
         name: p.name || existing.name || "Unknown",
         score: newScore,
@@ -45,6 +54,8 @@ class Scoreboard {
         highlightIds.push(p.id);
       }
     });
+
+    this.players = newPlayers;
 
     this._resortAndRender(
       animate && highlightIds.length > 0,
@@ -137,8 +148,12 @@ class Scoreboard {
         lastDelta: 0,
       };
 
-      const previousScore = Number.isFinite(existing.score) ? existing.score : 0;
-      const newScore = Number.isFinite(entry.score) ? entry.score : previousScore;
+      const previousScore = Number.isFinite(existing.score)
+        ? existing.score
+        : 0;
+      const newScore = Number.isFinite(entry.score)
+        ? entry.score
+        : previousScore;
       const delta = Number.isFinite(entry.points_earned)
         ? entry.points_earned
         : newScore - previousScore;
@@ -156,7 +171,10 @@ class Scoreboard {
       }
     });
 
-    this._resortAndRender(highlightIds.length > 0, highlightIds.length ? highlightIds : null);
+    this._resortAndRender(
+      highlightIds.length > 0,
+      highlightIds.length ? highlightIds : null
+    );
     highlightIds.forEach((playerId) => this._scheduleDeltaClear(playerId));
   }
 
@@ -225,7 +243,8 @@ class Scoreboard {
       name.className = "scoreboard-col name";
       name.innerHTML = this._sanitize(p.name);
       if (p.is_drawer) {
-        name.innerHTML += '<span class="drawer-badge" title="Đang vẽ">🎨</span>';
+        name.innerHTML +=
+          '<span class="drawer-badge" title="Đang vẽ">🎨</span>';
       }
 
       const score = document.createElement("div");
@@ -241,7 +260,9 @@ class Scoreboard {
         deltaSpan.textContent = `${sign}${p.lastDelta}`;
         score.appendChild(deltaSpan);
         row.classList.add(
-          p.lastDelta > 0 ? "scoreboard-row-positive" : "scoreboard-row-negative"
+          p.lastDelta > 0
+            ? "scoreboard-row-positive"
+            : "scoreboard-row-negative"
         );
       }
 
