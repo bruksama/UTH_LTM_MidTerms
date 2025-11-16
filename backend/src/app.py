@@ -177,7 +177,7 @@ def _close_room_for_host(host_sid):
     ACTIVE_TIMERS.pop(room_id, None)
 
     # lấy danh sách player trong phòng (trước khi xoá)
-    players = room_handler.get_room_players(room_id)  # list dict {id, name, ...}
+    
 
     # thông báo cho toàn bộ phòng (mọi người chuyển về lobby)
     socketio.emit(
@@ -185,7 +185,7 @@ def _close_room_for_host(host_sid):
         {"room_id": room_id, "reason": "host_left"},
         room=room_id,
     )
-
+    players = room_handler.get_room_players(room_id)  # list dict {id, name, ...}
     # cho từng socket rời room + xoá player khỏi storage
     for p in players:
         pid = p.get("id")
@@ -195,10 +195,9 @@ def _close_room_for_host(host_sid):
             leave_room(room_id, sid=pid)
         except Exception:
             pass
-        data_store.remove_player(pid)
+        
 
-    # cuối cùng xoá room
-    data_store.remove_room(room_id)
+    room_handler.close_room(room_id)
 
 
 # ================== END HELPERS ==================
@@ -338,10 +337,13 @@ def handle_kick_player(data):
     """
     room_id = data.get("room_id")
     target_id = data.get("target_id")
-    requester_id = request.sid  # socket id của thằng host
+    requester_id = request.sid  # socket id của host
 
     if not room_id or not target_id:
         emit("error", {"message": "room_id và target_id là bắt buộc"})
+        return
+    if target_id == requester_id:
+        emit("error", {"message": "Chủ phòng không thể kick chính mình"})
         return
     if ACTIVE_TIMERS.get(room_id):
         emit(

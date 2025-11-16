@@ -67,14 +67,22 @@ def check_guess(room_id, player_id, guess):
     game = data_store.get_game(room_id)
     if not game:
         return False
-
     is_correct = game.check_guess(guess)
+    if not is_correct:
+        return False
 
-    # Nếu đoán đúng → tính điểm luôn
-    if is_correct:
-        calculate_scores(room_id, player_id)
+    
+    calculate_scores(room_id, player_id)
 
-    return is_correct
+    player = data_store.get_player(player_id)
+    if player:
+        try:
+            player.mark_guessed()
+            data_store.update_player(player)
+        except AttributeError:
+            pass
+
+    return True
 
 def calculate_scores(room_id, guesser_id):
     """Add points for drawer and guesser"""

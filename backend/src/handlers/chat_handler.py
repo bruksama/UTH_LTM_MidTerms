@@ -51,16 +51,19 @@ def process_message(player_id: str, message: str):
         "| player:", player.name,
         "| guess:", repr(text),
         "| current_word:", repr(game.current_word),
+        "| state:", getattr(game, "state", None),
+        "| timer:", getattr(game, "timer", None),
     )
 
-    # Check đoán đúng
-    is_correct = game.check_guess(text)
+    if getattr(game, "state", None) != "playing":
+        return room_id, message_data, False
+    drawer_id = getattr(game, "drawer_id", None) or getattr(
+        game, "current_drawer_id", None
+    )
+    if player_id == drawer_id:
+        # người vẽ chat từ khoá vẫn chỉ là chat thường
+        return room_id, message_data, False
+    is_correct = game_handler.check_guess(room_id, player_id, text)
 
-    if is_correct:
-        # Cộng điểm nhưng KHÔNG được làm sập handler
-        try:
-            game_handler.calculate_scores(room_id, player_id)
-        except Exception as e:
-            print("[SCORE ERROR]", e)
-    return room_id, message_data, is_correct
+    return room_id, message_data, bool(is_correct)
 
