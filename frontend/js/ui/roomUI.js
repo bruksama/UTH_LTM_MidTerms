@@ -114,17 +114,39 @@ class RoomUI {
   }
 
   handleRoomJoined(data) {
-    console.log("[RoomUI] handleRoomJoined", data);
-    const roomId = data?.room_id;
-    if (!roomId) return;
+    this.currentRoomId = data.room_id;
 
-    this.currentRoomId = roomId;
-    window.currentRoomId = roomId;
+    if (data.room_id) {
+      // set global
+      window.currentRoomId = data.room_id;
 
-    // Lưu roomId để các component khác dùng
-    localStorage.setItem("roomId", roomId);
+      // Nếu mình KHÔNG phải host (chỉ join vào) thì cũng gắn URL hash
+      if (!window.isRoomHost) {
+        window.location.hash = data.room_id;
+      }
+    }
 
-    // chuyển UI từ lobby → game
+    // Cập nhật ô mã phòng cố định bên trái
+    const fixedRoomId = document.getElementById("fixed-room-id");
+    if (fixedRoomId && data.room_id) {
+      fixedRoomId.textContent = data.room_id;
+    }
+
+    // Ẩn màn chọn phòng, hiện màn game
+    const roomSelection = document.getElementById("room-selection");
+    const gameScreen = document.getElementById("game-screen");
+    if (roomSelection && gameScreen) {
+      roomSelection.classList.remove("active");
+      gameScreen.classList.add("active");
+    }
+
+    // Cập nhật danh sách player
+    if (window.gameUI && Array.isArray(data.players)) {
+      window.gameUI.updatePlayersList(data.players);
+    }
+  }
+
+
     const roomSelection = document.getElementById("room-selection");
     const gameScreen = document.getElementById("game-screen");
 
@@ -136,7 +158,38 @@ class RoomUI {
       gameScreen.classList.remove("hidden");
     }
 
-    // cập nhật danh sách người chơi bên phải
+    if (window.gameUI && Array.isArray(data.players)) {
+      window.gameUI.updatePlayersList(data.players);
+    }
+=========
+    // Auto join the created room
+    const playerName = document
+      .getElementById("player-name-input")
+      .value.trim();
+    this.socket.emit("join_room", {
+      room_id: data.room_id,
+      player_name: playerName,
+    });
+  }
+
+  handleRoomJoined(data) {
+    this.currentRoomId = data.room_id;
+
+    if (data.room_id) {
+      window.currentRoomId = data.room_id;
+    }
+
+    const roomSelection = document.getElementById("room-selection");
+    const gameScreen = document.getElementById("game-screen");
+
+    if (roomSelection && gameScreen) {
+      roomSelection.classList.remove("active");
+      roomSelection.classList.add("hidden");
+
+      gameScreen.classList.add("active");
+      gameScreen.classList.remove("hidden");
+    }
+
     if (window.gameUI && Array.isArray(data.players)) {
       window.gameUI.updatePlayersList(data.players);
     }
