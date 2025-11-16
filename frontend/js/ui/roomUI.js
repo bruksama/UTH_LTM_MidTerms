@@ -1,7 +1,4 @@
-/**
- * Room Management UI
- * Handles room creation and joining
- */
+
 class RoomUI {
   constructor(socketClient) {
     this.socket = socketClient;
@@ -55,7 +52,7 @@ class RoomUI {
       return;
     }
 
-    // chỉ emit, phần còn lại server trả về room_created/room_joined
+    
     this.socket.emit("create_room", {
       player_name: playerName,
     });
@@ -103,6 +100,12 @@ class RoomUI {
       roomIdDisplay.classList.remove("hidden");
     }
 
+    // ✅ CẬP NHẬT MÃ PHÒNG Ở PANEL TRÁI
+    const fixedRoomId = document.getElementById("fixed-room-id");
+    if (fixedRoomId) {
+      fixedRoomId.textContent = data.room_id;
+    }
+
     // Auto join phòng vừa tạo
     const playerName = document
       .getElementById("player-name-input")
@@ -123,6 +126,12 @@ class RoomUI {
 
     // Lưu roomId để các component khác dùng
     localStorage.setItem("roomId", roomId);
+
+    // ✅ CẬP NHẬT MÃ PHÒNG Ở PANEL TRÁI KHI JOIN
+    const fixedRoomId = document.getElementById("fixed-room-id");
+    if (fixedRoomId) {
+      fixedRoomId.textContent = roomId;
+    }
 
     // chuyển UI từ lobby → game
     const roomSelection = document.getElementById("room-selection");
