@@ -130,3 +130,6 @@ def remove_game(room_id):
     if room_id in games:
         del games[room_id]
 
+def update_player(player):
+    return 
+   

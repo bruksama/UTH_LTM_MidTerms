@@ -46,8 +46,15 @@ def add_player_to_room(room_id, player_id, player_name):
     room = data_store.get_room(room_id)
     if not room:
         return False, 'Room not found', None
-    
-    # Create Player object
+    old_player = data_store.get_player(player_id)
+    if old_player:
+        old_room_id = old_player.room_id
+        if old_room_id and old_room_id != room_id:
+            old_room = data_store.get_room(old_room_id)
+            if old_room:
+                old_room.remove_player(player_id)
+            # và giữ hoặc xoá player cũ tùy design, ở đây tao xoá luôn cho sạch:
+            data_store.remove_player(player_id)
     player = Player(player_id, player_name, room_id)
     
     # Add player to storage
@@ -135,3 +142,30 @@ def room_has_player(room_id: str, player_id: str) -> bool:
     if not room:
         return False
     return room.has_player(player_id)
+def close_room(room_id: str):
+    """
+    Đóng hẳn 1 room:
+    - Xoá room khỏi data_store
+    - Xoá toàn bộ player thuộc room đó
+    - (Tuỳ) Xoá luôn game nếu data_store có quản lý game
+    """
+    room = data_store.get_room(room_id)
+    if not room:
+        return
+
+    # copy list vì room.players sẽ thay đổi khi remove
+    player_ids = list(room.players)
+
+    # Xoá tất cả player thuộc room
+    for pid in player_ids:
+        data_store.remove_player(pid)
+
+    # Nếu data_store có quản lý game, có thể xoá luôn:
+    try:
+        data_store.remove_game(room_id)
+    except Exception:
+        # nếu chưa implement remove_game thì bỏ qua
+        pass
+
+    # Xoá room cuối cùng
+    data_store.remove_room(room_id)
