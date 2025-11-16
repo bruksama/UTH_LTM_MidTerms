@@ -82,6 +82,12 @@ socketClient.on("room_joined", (data) => {
   // Cập nhật room hiện tại
   if (data.room_id) {
     window.currentRoomId = data.room_id;
+    if (window.chat) {
+      window.chat.roomId = data.room_id;
+    }
+    if (window.gameUI && typeof window.gameUI.updateTimer === "function") {
+      window.gameUI.updateTimer(90);
+    }
   }
 
   // 🔥 nhận flag host từ backend
@@ -101,6 +107,9 @@ socketClient.on("room_joined", (data) => {
 
   // Initialize scoreboard with current players
   if (data.players && Array.isArray(data.players) && window.scoreboard) {
+    if (typeof window.scoreboard.clear === "function") {
+      window.scoreboard.clear(); // 🔥 xoá state cũ trước
+    }
     window.scoreboard.update(data.players);
   }
   if (data?.room_id) {
@@ -332,9 +341,10 @@ socketClient.on("error", (data) => {
     }
 
     // Dọn scoreboard / canvas nếu muốn
-    if (window.scoreboard) {
-      window.scoreboard.update([]);
+    if (window.scoreboard && typeof window.scoreboard.clear === "function") {
+      window.scoreboard.clear();
     }
+
     if (
       window.viewerCanvas &&
       typeof window.viewerCanvas.reset === "function"
@@ -360,7 +370,9 @@ function goToLobby() {
   // Reset biến global
   window.currentRoomId = null;
   window.isRoomHost = false;
-
+  if (window.roomUI) {
+    window.roomUI.currentRoomId = null; // NEW: reset luôn state trong RoomUI
+  }
   const roomSelection = document.getElementById("room-selection");
   const gameScreen = document.getElementById("game-screen");
 
@@ -374,8 +386,14 @@ function goToLobby() {
   }
 
   // Dọn scoreboard / canvas cho sạch
+  if (window.gameUI && typeof window.gameUI.resetState === "function") {
+    window.gameUI.resetState();
+  }
   if (window.scoreboard && typeof window.scoreboard.update === "function") {
-    window.scoreboard.update([]);
+    window.scoreboard.clear();
+  }
+  if (window.gameUI && typeof window.gameUI._stopLocalTimer === "function") {
+    window.gameUI._stopLocalTimer();
   }
   if (window.viewerCanvas && typeof window.viewerCanvas.reset === "function") {
     window.viewerCanvas.reset();
@@ -386,12 +404,28 @@ function goToLobby() {
   ) {
     window.drawerCanvas.disable();
   }
+  if (window.gameUI && typeof window.gameUI.updatePlayersList === "function") {
+    window.gameUI.updatePlayersList([]); // xoá sạch danh sách người chơi ở UI
+  }
 
+  if (window.chat && typeof window.chat.clear === "function") {
+    window.chat.clear();
+  }
   // Clear form input, để client nhìn giống tab host ban đầu
   const roomIdInput = document.getElementById("room-id-input");
   const nameInput = document.getElementById("player-name-input");
   if (roomIdInput) roomIdInput.value = "";
   if (nameInput) nameInput.value = "";
+  const roomIdDisplay = document.getElementById("room-id-display");
+  const roomIdText = document.getElementById("room-id-text");
+  if (roomIdText) roomIdText.textContent = ""; // xoá code cũ
+  if (roomIdDisplay) roomIdDisplay.classList.add("hidden"); // ẩn luôn block
+  const lobbyRoomCode =
+    document.getElementById("fixed-room-id") || // đổi đúng id của mày
+    document.getElementById("lobby-room-code"); // nếu dùng id khác
+  if (lobbyRoomCode) {
+    lobbyRoomCode.textContent = ""; // xoá code của phòng cũ
+  }
 }
 
 // ================== START GAME BUTTON ==================
@@ -423,32 +457,8 @@ socketClient.on("room_closed", (data) => {
   if (window.chat) window.chat.displaySystemMessage(reason);
 
   goToLobby();
-  // Xóa state phòng/game
-  localStorage.removeItem("roomId");
-  localStorage.removeItem("inGame");
-  localStorage.removeItem("isRoomHost");
-  window.currentRoomId = null;
-  window.isRoomHost = false;
-
-  if (window.drawerCanvas) window.drawerCanvas.disable();
-  if (window.viewerCanvas && typeof window.viewerCanvas.reset === "function") {
-    window.viewerCanvas.reset();
-  }
-  if (window.scoreboard && typeof window.scoreboard.update === "function") {
-    window.scoreboard.update([]);
-  }
-
-  notifications.info(reason);
-  if (window.chat) window.chat.displaySystemMessage(reason);
-
-  const roomSelection = document.getElementById("room-selection");
-  const gameScreen = document.getElementById("game-screen");
-  if (roomSelection && gameScreen) {
-    gameScreen.classList.add("active");
-    roomSelection.classList.remove("hidden");
-
-    gameScreen.classList.remove("active");
-    gameScreen.classList.add("hidden");
+  if (window.gameUI && typeof window.gameUI.resetState === "function") {
+    window.gameUI.resetState();
   }
 });
 

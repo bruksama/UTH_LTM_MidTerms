@@ -169,9 +169,8 @@ class GameUI {
 
   updateTimer(seconds) {
     // Keep local remainingSeconds in sync when server sends authoritative value
-    if (typeof seconds === "number") {
-      this.remainingSeconds = seconds;
-    }
+    const s = typeof seconds === "number" ? seconds : 90;
+    this.remainingSeconds = s;
     const timerDisplay = document.getElementById("timer-display");
     if (timerDisplay) {
       timerDisplay.textContent = seconds;
@@ -189,10 +188,16 @@ class GameUI {
 
   updatePlayersList(players) {
     const playersList = document.getElementById("players-list");
-    if (!playersList) return;
+    if (!playersList || !Array.isArray(players)) return;
+
+    // 🔥 Đồng bộ luôn scoreboard theo danh sách mới từ server
+    if (window.scoreboard) {
+      // ở đây không cần animate, chỉ muốn danh sách chuẩn
+      window.scoreboard.update(players, { animate: false });
+    }
 
     playersList.innerHTML = "";
-
+    const myId = this.socket?.socket?.id || this.socket?.id || null;
     players.forEach((player) => {
       const playerItem = document.createElement("div");
       playerItem.className = "player-item";
@@ -254,5 +259,30 @@ class GameUI {
       clearInterval(this._timerInterval);
       this._timerInterval = null;
     }
+    this.remainingSeconds = 0;
+    const timerDisplay = document.getElementById("timer-display");
+    if (timerDisplay) {
+      timerDisplay.textContent = "--";
+      timerDisplay.style.color = "#667eea"; // màu mặc định
+    }
+  }
+
+  resetState() {
+    // dừng countdown local
+    this._stopLocalTimer();
+
+    // reset biến trạng thái
+    this.isDrawer = false;
+    this.currentWord = "";
+    this.remainingSeconds = 0;
+
+    // reset UI timer về 0 (hoặc "--" nếu mày muốn custom thêm)
+    this.updateTimer(0);
+
+    // Ẩn ô hiển thị từ khoá, reset text "người vẽ hiện tại"
+    const wordDisplay = document.getElementById("word-display");
+    const drawerInfo = document.getElementById("current-drawer");
+    if (wordDisplay) wordDisplay.classList.add("hidden");
+    if (drawerInfo) drawerInfo.textContent = "";
   }
 }

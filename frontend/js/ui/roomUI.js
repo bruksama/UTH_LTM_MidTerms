@@ -114,12 +114,17 @@ class RoomUI {
   }
 
   handleRoomJoined(data) {
-    this.currentRoomId = data.room_id;
+    console.log("[RoomUI] handleRoomJoined", data);
+    const roomId = data?.room_id;
+    if (!roomId) return;
 
-    if (data.room_id) {
-      window.currentRoomId = data.room_id;
-    }
+    this.currentRoomId = roomId;
+    window.currentRoomId = roomId;
 
+    // Lưu roomId để các component khác dùng
+    localStorage.setItem("roomId", roomId);
+
+    // chuyển UI từ lobby → game
     const roomSelection = document.getElementById("room-selection");
     const gameScreen = document.getElementById("game-screen");
 
@@ -131,6 +136,7 @@ class RoomUI {
       gameScreen.classList.remove("hidden");
     }
 
+    // cập nhật danh sách người chơi bên phải
     if (window.gameUI && Array.isArray(data.players)) {
       window.gameUI.updatePlayersList(data.players);
     }
