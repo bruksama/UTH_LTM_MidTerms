@@ -137,12 +137,12 @@ npx http-server -p 8000
 - [DONE] handlers/room_handler.py - Room logic implemented
 - [DONE] handlers/drawing_handler.py - Drawing logic implemented
 - [DONE] handlers/chat_handler.py - Chat logic implemented
-- [TODO] models/game.py - Game state machine
-- [TODO] handlers/game_handler.py - Game logic (rounds, scoring, timer)
-- [TODO] Word selection từ wordlist.json
-- [TODO] Guess checking logic
-- [TODO] Scoring system
-- [TODO] Timer system
+- [DONE] models/game.py - Game state machine
+- [DONE] handlers/game_handler.py - Game logic (rounds, scoring, timer)
+- [DONE] Word selection từ wordlist.json
+- [DONE] Guess checking logic
+- [DONE] Scoring system
+- [DONE] Timer system
 
 ### Thành viên 3: Frontend Lead & Canvas (Drawer)
 
@@ -177,6 +177,7 @@ npx http-server -p 8000
 ### Đã hoàn thành (70% tổng thể)
 
 #### Backend (50% complete)
+
 - [DONE] Flask-SocketIO server với threading mode
 - [DONE] Socket connection management (connect/disconnect)
 - [DONE] Room operations refactored to handlers
@@ -190,6 +191,7 @@ npx http-server -p 8000
 - [DONE] Unit tests (51 tests passing)
 
 #### Frontend (95% complete)
+
 - [DONE] Socket.IO client connection với auto-reconnect
 - [DONE] Room creation và join UI
 - [DONE] Canvas drawing system (DrawerCanvas)
@@ -221,16 +223,16 @@ npx http-server -p 8000
 
 Các tính năng này đã có UI frontend ready, chỉ cần backend implement:
 
-- [TODO] Start game logic - Khởi tạo game session
-- [TODO] Round management - Bắt đầu/kết thúc vòng chơi
-- [TODO] Drawer selection - Chọn người vẽ mỗi round
-- [TODO] Word selection - Chọn từ khóa từ wordlist.json
-- [TODO] Timer system - Countdown timer cho mỗi round
-- [TODO] Guess checking - So sánh đoán với từ khóa
-- [TODO] Scoring system - Tính điểm cho người đoán và người vẽ
-- [TODO] Round results - Hiển thị kết quả sau mỗi round
-- [TODO] Game end condition - Kết thúc game sau N rounds
-- [TODO] Word hints - Hiển thị gợi ý (số chữ cái)
+- [Done] Start game logic - Khởi tạo game session
+- [DONE] Round management - Bắt đầu/kết thúc vòng chơi
+- [DONE] Drawer selection - Chọn người vẽ mỗi round
+- [DONE] Word selection - Chọn từ khóa từ wordlist.json
+- [DONE] Timer system - Countdown timer cho mỗi round
+- [DONE] Guess checking - So sánh đoán với từ khóa
+- [DONE] Scoring system - Tính điểm cho người đoán và người vẽ
+- [DONE] Round results - Hiển thị kết quả sau mỗi round
+- [DONE] Game end condition - Kết thúc game sau N rounds
+- [Pending] Word hints - Hiển thị gợi ý (số chữ cái)
 
 Ghi chú: Frontend đã implement UI và event handlers cho tất cả tính năng trên. Khi backend emit các events tương ứng (game_started, round_started, correct_guess, round_ended, etc.), frontend sẽ hoạt động ngay lập tức.
 
@@ -239,6 +241,7 @@ Ghi chú: Frontend đã implement UI và event handlers cho tất cả tính nă
 ### Socket Events đã hoạt động
 
 Client to Server:
+
 - [DONE] create_room - Tạo phòng mới
 - [DONE] join_room - Tham gia phòng
 - [DONE] leave_room - Rời phòng
@@ -251,6 +254,7 @@ Client to Server:
 - [DONE] send_message - Gửi tin nhắn chat
 
 Server to Client:
+
 - [DONE] connected - Xác nhận kết nối
 - [DONE] room_created - Phòng đã tạo
 - [DONE] room_joined - Đã join phòng
@@ -263,14 +267,15 @@ Server to Client:
 ### Socket Events chờ backend implement
 
 Frontend đã sẵn sàng nhận các events sau:
-- [PENDING] game_started - Game bắt đầu
-- [PENDING] round_started - Round mới bắt đầu (với word cho drawer)
-- [PENDING] round_ended - Round kết thúc (với scores)
-- [PENDING] game_ended - Game kết thúc
-- [PENDING] timer_update - Cập nhật thời gian còn lại
-- [PENDING] correct_guess - Ai đó đoán đúng
-- [PENDING] scores_updated - Cập nhật điểm số
-- [PENDING] drawer_changed - Người vẽ thay đổi
+
+- [DONE] game_started - Game bắt đầu
+- [DONE] round_started - Round mới bắt đầu (với word cho drawer)
+- [DONE] round_ended - Round kết thúc (với scores)
+- [DONE] game_ended - Game kết thúc
+- [DONE] timer_update - Cập nhật thời gian còn lại
+- [DONE] correct_guess - Ai đó đoán đúng
+- [DONE] scores_updated - Cập nhật điểm số
+- [DONE] drawer_changed - Người vẽ thay đổi
 
 Xem chi tiết đầy đủ tại docs/API.md
 
